@@ -1,9 +1,11 @@
 from datetime import datetime , timezone
+from config.path import ALERT_DATA
+from config.path import CONFIG_DATA
 import os
 import json
 
-ALERT_COUNTER_FILE = r"F:\VSCODE\IDS\config\alert_counter.txt"
-ALERT_FILE = r"F:\VSCODE\IDS\data\alert\alert.jsonl"
+ALERT_COUNTER_FILE = CONFIG_DATA/"alert_counter.txt"
+ALERT_FILE = ALERT_DATA/"alert.json"
 
 
 

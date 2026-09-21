@@ -1,14 +1,9 @@
 import json
-from alert.alert import  alert_detect_brute_force
-def detect_brute_force(sessions):
+from ids.alert.alert import  alert_detect_brute_force
+def detect_brute_force(sessions,rules):
 
-
-
-    RULE_FILE = r"F:\VSCODE\IDS\config\rules.json"
-    with open(RULE_FILE,"r",encoding = "utf-8" ) as f:
-        rule = json.load(f)
-    MAX_FAILED_LOGINS = rule.get("MAX_FAILED_LOGINS",0)
-    REQUEST_RATE_THRESHOLD = rule.get("REQUEST_RATE_THRESHOLD",0)
+    MAX_FAILED_LOGINS = rules.get("MAX_FAILED_LOGINS",0)
+    REQUEST_RATE_THRESHOLD = rules.get("REQUEST_RATE_THRESHOLD",0)
 
 
 

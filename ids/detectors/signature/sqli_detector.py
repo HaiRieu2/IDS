@@ -1,6 +1,6 @@
 import re
 from urllib.parse import unquote
-from alert.alert import alert_detect_sqli
+from ids.alert.alert import alert_detect_sqli
 import json
 
 def normalize_payload(payload):
@@ -21,18 +21,13 @@ def normalize_payload(payload):
     return payload
 
 
-def detect_sqli(session):
+def detect_sqli(session,rules):
     """Quét dữ liệu SQLi từ cấu trúc session HTTP."""
     # 1. Kiểm tra session có chứa dữ liệu HTTP không
     http = session.get("http")
     if not http or not http.get("is_http"):
         return
-
-    
-    RULE_FILE = r"F:\VSCODE\IDS\config\rules.json"
-    with open(RULE_FILE,"r",encoding="utf-8") as f:
-        rule = json.load(f)
-    SQLI_PATTERNS = rule.get("SQLI_PATTERNS",[])
+    SQLI_PATTERNS = rules.get("SQLI_PATTERNS",[])
 
 
 

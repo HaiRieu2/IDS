@@ -1,4 +1,4 @@
-from alert.alert import alert_detect_xss
+from ids.alert.alert import alert_detect_xss
 import json
 
 def normalize_payload(payload):
@@ -18,18 +18,13 @@ def normalize_payload(payload):
     payload = re.sub(r"\s+", " ", payload)
     return payload
 
-def detect_xss(session):
+def detect_xss(session,rules):
     """Quét và phát hiện dấu hiệu XSS dựa trên cấu trúc JSON session."""
     # 1. Kiểm tra cấu trúc session HTTP hợp lệ
     http = session.get("http")
     if not http or not http.get("is_http"):
         return
-
-    
-    RULE_FILE = r"F:\VSCODE\IDS\config\rules.json"
-    with open(RULE_FILE,"r",encoding="utf-8") as f:
-        rule = json.load(f)
-    XSS_PATTERNS = rule.get("XSS_PATTERNS",[])
+    XSS_PATTERNS = rules.get("XSS_PATTERNS",[])
 
 
 

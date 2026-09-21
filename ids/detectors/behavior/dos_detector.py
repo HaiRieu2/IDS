@@ -5,7 +5,7 @@
 # 4. UDP Flood : Protocol UDP 1 IP UDP Packet  Total byte
 # 5. ICMP Flood : Protocol ICMP 1 IP ICMP Total Total byte
 # 6. CONNECTION Flood : Duration > 72000 dst_port > 1000 cai va 10000 session
-from alert.alert import alert_detect_dos_connection,alert_detect_SYN_Flood,alert_detect_HTTP_Flood,alert_detect_UDP_Flood,alert_detect_ICMP_Flood
+from ids.alert.alert import alert_detect_dos_connection,alert_detect_SYN_Flood,alert_detect_HTTP_Flood,alert_detect_UDP_Flood,alert_detect_ICMP_Flood
 import json
 def detect_SYN_Flod(sessions,SYN_FLAG_THRESHOLD):
     list_src_ip = []
@@ -129,10 +129,8 @@ def detect_dos_connection(sessions,DURATION_THRESHOLD,IP_COUNT_THRESHOLD):
             alert_detect_dos_connection("TOO MUCH IP",evidence)
     return
     
-def detect_dos (sessions):
-    RULE_FILE = r"F:\VSCODE\IDS\config\rules.json"
-    with open(RULE_FILE,"r",encoding = "utf-8" ) as f:
-        rules = json.load(f)
+def detect_dos (sessions,rules):
+
 
     SYN_FLAG_THRESHOLD = rules.get("SYN_FLAG_THRESHOLD",0) #1000
     HTTP_REQUEST_THRESHOLD = rules.get("HTTP_REQUEST_THRESHOLD",0) #1000

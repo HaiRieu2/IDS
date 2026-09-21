@@ -30,6 +30,6 @@ def feature_extractor(session): #chỉ truyền vào session FIN/RST/timeout
     rst_flag_count= flag.get("rst",0)
     psh_flag_count= flag.get("psh",0)
     ack_flag_count= flag.get("ack",0)
-)
+
 
 #Hỏi hiếu xem timeout duration có bằng 60s không

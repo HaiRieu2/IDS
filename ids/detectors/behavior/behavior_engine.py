@@ -19,7 +19,7 @@ recent_sessions = []
 TIME_WINDOW = 100
 
 
-def behavior_engine(session):
+def behavior_engine(session,rules):
 
     """
     Nhận một session đã ghép hoàn chỉnh.
@@ -44,8 +44,8 @@ def behavior_engine(session):
     remove_old_sessions(current_time)
 
     # Gọi các detector
-    detect_brute_force(get_sessions())
-    detect_dos(get_sessions())
+    detect_brute_force(get_sessions(),rules)
+    detect_dos(get_sessions(),rules)
 
     return
 

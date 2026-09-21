@@ -6,7 +6,8 @@ import time
 import queue
 from .packet_parser import parse_packet
 from .session_builder import SessionBuilder
-
+from config.path import SESSION_DATA
+from config.path import CONFIG_DATA
 session_queue = queue.Queue()
 class LiveCapture:  
 
@@ -15,8 +16,8 @@ class LiveCapture:
         interface=None,
         bpf_filter=None,
         session_timeout=120, #120 di   
-        output_file=r"F:\VSCODE\IDS\data\sessions\sessions.json",
-        output_session_counter_file=r"F:\VSCODE\IDS\config\session_counter.txt",
+        output_file= SESSION_DATA/"sessions.json",
+        output_session_counter_file= CONFIG_DATA/"session_counter.txt",
         autosave_interval=30,
 
     ):

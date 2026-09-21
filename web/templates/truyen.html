@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danh sách truyện — TruyenHay</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="{{ url_for('index') }}" class="brand">
+      <div>
+        <div class="brand-text">TruyenHay</div>
+        <div class="brand-sub">Tiên hiệp | Huyền huyễn | Hiện đại</div>
+      </div>
+    </a>
+    <nav class="main-nav">
+      <a href="{{ url_for('index') }}">Trang chủ</a>
+      <a href="{{ url_for('truyen_list') }}" class="active">Truyện</a>
+      <form class="search-form" action="{{ url_for('truyen_list') }}" method="get">
+        <input type="text" name="q" placeholder="Tìm truyện..." value="{{ query or '' }}">
+        <button type="submit" aria-label="Tìm kiếm">🔍</button>
+      </form>
+      {% if session.get('username') %}
+        <a href="{{ url_for('logout') }}">Đăng xuất ({{ session.get('username') }})</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="cta">Đăng nhập</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+<div class="page-head">
+  <h1>Danh sách truyện</h1>
+  <p>Khám phá toàn bộ kho truyện tiên hiệp, huyền huyễn, khoa huyễn tại TruyenHay.</p>
+</div>
+
+<div class="search-bar">
+  <form action="{{ url_for('truyen_list') }}" method="get">
+    <input type="text" name="q" placeholder="Nhập tên truyện, tác giả hoặc thể loại..." value="{{ query or '' }}">
+    <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+  </form>
+</div>
+
+{% if query %}
+<div class="search-result-note">
+  Kết quả tìm kiếm cho: <b>{{ query|safe }}</b> — {{ truyen_list|length }} truyện được tìm thấy.
+</div>
+{% endif %}
+
+<section class="section" style="padding-top:0;">
+  <div class="truyen-grid">
+    {% for t in truyen_list %}
+    <a class="truyen-card" href="{{ url_for('truyen_detail', truyen_id=t['id']) }}">
+      <div class="truyen-cover">
+        <span class="badge-status">{{ t['status'] }}</span>
+        <img src="{{ url_for('static', filename='images/' + t['image']) }}" alt="{{ t['title'] }}">
+      </div>
+      <div class="truyen-meta">
+        <h3>{{ t['title'] }}</h3>
+        <div class="author">{{ t['author'] }} · {{ t['category'] }}</div>
+        <div class="views">👁 {{ "{:,}".format(t['views']) }} lượt xem</div>
+      </div>
+    </a>
+    {% else %}
+    <p style="color:var(--muted); grid-column: 1 / -1;">Không tìm thấy truyện nào phù hợp.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div>© 2026 TruyenHay</div>
+  <div class="project-line">Đề tài: Tăng cường phát hiện tấn công (SQLi, XSS, DoS, Brute Force) dựa trên học máy / học sâu — Nhóm 1</div>
+</footer>
+
+</body>
+</html>

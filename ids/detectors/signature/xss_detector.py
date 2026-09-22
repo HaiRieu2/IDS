@@ -32,14 +32,14 @@ def detect_xss(session,rules):
     # 2. Truy cập vào mảng requests: session["http"]["transactions"]["requests"]
     transactions = http.get("transactions", [])
     # 3. Duyệt qua từng request gửi lên
-    for transaction in transactions:
+    transaction = transactions[-1]
 
-        uri = (transaction.get("request")).get("uri")
-        body = (transaction.get("request")).get("body")
-        payload = uri + body
-        for pattern in XSS_PATTERNS:
-            if re.search(pattern, payload, re.IGNORECASE):
-                network = session.get("network",{})
-                src_ip = network.get("src_ip","")
-                alert_detect_xss(src_ip,payload)# Phát hiện XSS
+    uri = (transaction.get("request")).get("uri")
+    body = (transaction.get("request")).get("body")
+    payload = uri + body
+    for pattern in XSS_PATTERNS:
+        if re.search(pattern, payload, re.IGNORECASE):
+            network = session.get("network",{})
+            src_ip = network.get("src_ip","")
+            alert_detect_xss(src_ip,payload)# Phát hiện XSS
     return # Không phát hiện XSS

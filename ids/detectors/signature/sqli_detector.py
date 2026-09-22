@@ -34,14 +34,14 @@ def detect_sqli(session,rules):
    # 2. Truy cập vào mảng requests: session["http"]["transactions"]["requests"]
     transactions = http.get("transactions", [])
        # 3. Duyệt qua từng request gửi lên
-    for transaction in transactions:
+    transaction = transactions[-1]
            # Với SQLI, quét CẢ URI lẫn Body trên TẤT CẢ các phương thức (GET, POST,...)
-        uri = (transaction.get("request")).get("uri")
-        body = (transaction.get("request")).get("body")
-        payload = uri + body
-        for pattern in SQLI_PATTERNS:
-            if re.search(pattern, payload, re.IGNORECASE):
-                network = session.get("network",{})
-                src_ip = network.get("src_ip","")
-                alert_detect_sqli(src_ip,payload)# Phát hiện SQLI
+    uri = (transaction.get("request")).get("uri")
+    body = (transaction.get("request")).get("body")
+    payload = uri + body
+    for pattern in SQLI_PATTERNS:
+        if re.search(pattern, payload, re.IGNORECASE):
+            network = session.get("network",{})
+            src_ip = network.get("src_ip","")
+            alert_detect_sqli(src_ip,payload)# Phát hiện SQLI
     return # Không phát hiện SQLi

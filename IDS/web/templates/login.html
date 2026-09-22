@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập — TruyenHay</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="{{ url_for('index') }}" class="brand">
+      <div>
+        <div class="brand-text">TruyenHay</div>
+        <div class="brand-sub">Tiên hiệp | Huyền huyễn | Hiện đại</div>
+      </div>
+    </a>
+    <nav class="main-nav">
+      <a href="{{ url_for('index') }}">Trang chủ</a>
+      <a href="{{ url_for('truyen_list') }}">Truyện</a>
+      <a href="{{ url_for('login') }}" class="active cta">Đăng nhập</a>
+    </nav>
+  </div>
+</header>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>Đăng nhập</h1>
+    <p class="sub">Chào mừng đạo hữu quay lại TruyenHay</p>
+
+    {% if error %}
+    <div class="flash error">{{ error }}</div>
+    {% endif %}
+    {% if success %}
+    <div class="flash success">{{ success }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('login') }}" autocomplete="off">
+      <div class="field">
+        <label for="username">Tên đăng nhập</label>
+        <input type="text" id="username" name="username" placeholder="ví dụ: demo" required>
+      </div>
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
+    </form>
+
+
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div>© 2026 TruyenHay</div>
+  <div class="project-line">Đề tài: Tăng cường phát hiện tấn công (SQLi, XSS, DoS, Brute Force) dựa trên học máy / học sâu — Nhóm 1</div>
+</footer>
+
+</body>
+</html>

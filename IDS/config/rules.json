@@ -1,0 +1,32 @@
+{
+    "SYN_FLAG_THRESHOLD": 1000,
+    "HTTP_REQUEST_THRESHOLD": 1000,
+    "HTTP_REQUEST_RATE_THRESHOLD": 10,
+    "UDP_PACKET_THRESHOLD": 1000,
+    "UDP_TOTAL_BYTES_THRESHOLD": 65535,
+    "ICMP_COUNT_THRESHOLD": 1000,
+    "ICMP_TOTAL_BYTES_THRESHOLD": 65535,
+    "DURATION_THRESHOLD": 9600,
+    "IP_COUNT_THRESHOLD": 2000,
+    "MAX_FAILED_LOGINS": 10,
+    "REQUEST_RATE_THRESHOLD": 20,
+    "XSS_PATTERNS": [
+        "<\\s*script\\b",
+        "javascript\\s*:",
+        "\\bon\\w+\\s*=",
+        "<\\s*iframe\\b",
+        "<\\s*img\\b[^>]*\\bonerror\\s*=",
+        "<\\s*svg\\b[^>]*\\bon\\w+\\s*=",
+        "\\balert\\s*\\(",
+        "\\bprompt\\s*\\(",
+        "\\bconfirm\\s*\\("
+    ],
+    "SQLI_PATTERNS": [
+        "(\\bor\\b|\\band\\b)\\s+['\\\"]?\\w+['\\\"]?\\s*=\\s*['\\\"]?\\w+",
+        "\\bunion\\s+(all\\s+)?select\\b",
+        "\\b(select|insert\\s+into|update\\s+.+\\s+set|delete\\s+from)\\b",
+        "(--|#|/\\*|\\*/)",
+        "\\b(sleep|benchmark|waitfor\\s+delay)\\s*\\(",
+        "\\binformation_schema\\b"
+    ]
+}

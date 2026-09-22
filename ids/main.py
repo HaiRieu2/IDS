@@ -3,11 +3,11 @@ import queue
 import threading
 import json
 from config.path import CONFIG_DATA
-from ids.capture.live_capture import LiveCapture, session_queue
+from ids.capture.live_capture import LiveCapture
 from ids.capture.session_builder import SessionBuilder
 from ids.detectors.signature.signature_engine import signature_engine
 from ids.detectors.behavior.behavior_engine import behavior_engine
-def worker_xu_ly(sb):
+def worker_xu_ly(capture):
     print('[+] Goi Ham worker_xu_ly thanh cong')
     RULE_FILE = CONFIG_DATA/"rules.json"
     with open(RULE_FILE,"r",encoding = "utf-8" ) as f:
@@ -15,7 +15,9 @@ def worker_xu_ly(sb):
     while True:
         try:
             # Lấy packet đã parse từ hàng đợi (hàm .get() sẽ tự động chờ đến khi có dữ liệu mà ko tốn CPU)
-            session = session_queue.get()
+            packet = capture.packet_queue.get()
+            session = capture.process_packet(packet)
+            #session = capture.session_builder.getsession
             if session is None:
                 break
             # Nếu gói tin vừa rồi tạo ra hoặc cập nhật một session hợp lệ, chuyển sang cho các engine xử lý
@@ -28,7 +30,7 @@ def worker_xu_ly(sb):
         except Exception as e:
             print(f"[ERROR] Worker error: {e}")
         finally:
-            session_queue.task_done()
+            capture.packet_queue.task_done()
 def main():
     import argparse
     parser = argparse.ArgumentParser(
@@ -49,11 +51,6 @@ def main():
         "-t", "--timeout", type=int, default=60,
         help="Session timeout (seconds) of inactivity before a "
              "flow is considered a new session"
-    )
-
-    parser.add_argument(
-        "-o", "--output", default=r"F:\VSCODE\IDS\ids\data\sessions.json",
-        help="Output JSON file"
     )
 
     parser.add_argument(
@@ -82,7 +79,7 @@ def main():
         if args.pcap:
             capture.read_pcap(args.pcap)
         else:
-            threading.Thread(target=worker_xu_ly,args=(capture.session_builder,) ,daemon=True).start()
+            threading.Thread(target=worker_xu_ly,args=(capture,) ,daemon=True).start()
             capture.start()
 
     except KeyboardInterrupt:

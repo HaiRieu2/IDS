@@ -8,7 +8,7 @@ from .packet_parser import parse_packet
 from .session_builder import SessionBuilder
 from config.path import SESSION_DATA
 from config.path import CONFIG_DATA
-session_queue = queue.Queue()
+
 class LiveCapture:  
 
     def __init__(
@@ -21,6 +21,7 @@ class LiveCapture:
         autosave_interval=30,
 
     ):
+        self.packet_queue = queue.Queue()
 
         self.interface = interface
 
@@ -48,6 +49,12 @@ class LiveCapture:
         self._last_packet_time = None 
 
 
+
+    #Put packet vao queue
+    def put_packet(self,packet):
+        self.packet_queue.put(packet)
+        return
+
     # Packet callback
 
     def process_packet(self, packet):
@@ -62,11 +69,14 @@ class LiveCapture:
             self._last_packet_time = parsed["timestamp"]
 
             #packet_queue.put(parsed)
-            session_queue.put(self.session_builder.add_packet(parsed))  #Ket qua cua add_packet co quan trong cho 2 ham duoi khong
+            session = self.session_builder.add_packet(parsed)  #Ket qua cua add_packet co quan trong cho 2 ham duoi khong
             
             self._log_packet(parsed)
 
             self._maybe_autosave()
+
+            return session
+            
 
         except Exception as e:
 
@@ -169,9 +179,9 @@ class LiveCapture:
                 sniff(
                     iface=self.interface,
                     filter=self.bpf_filter,
-                    prn=self.process_packet,#(process_packet)
+                    prn=self.put_packet,#(process_packet) #queue
                     store=False,
-                    timeout=5
+                    timeout=10
                 )
                 self._maybe_autosave()
 

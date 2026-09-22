@@ -1,5 +1,6 @@
 from ids.alert.alert import alert_detect_xss
 import json
+import re
 
 def normalize_payload(payload):
     """
@@ -32,7 +33,7 @@ def detect_xss(session,rules):
     transactions = http.get("transactions", [])
     # 3. Duyệt qua từng request gửi lên
     for transaction in transactions:
-        # Với XSS, quét CẢ URI lẫn Body trên TẤT CẢ các phương thức (GET, POST,...)
+
         uri = (transaction.get("request")).get("uri")
         body = (transaction.get("request")).get("body")
         payload = uri + body

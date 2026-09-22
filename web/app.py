@@ -137,7 +137,7 @@ def login():
         elif error is None:
             error = "Sai tên đăng nhập hoặc mật khẩu !"
 
-    return render_template("login.html", error=error, success=None)
+    return render_template("login.html", error=error, success=None),401
 
 @app.route("/logout")
 def logout():

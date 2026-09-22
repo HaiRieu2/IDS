@@ -14,7 +14,7 @@ def detect_brute_force(sessions,rules):
         timestamp = session.get("timestamp", {})
         network = session.get("network", {})
         http = session.get("http", {})
-        transactions = session.get("transaction", {})
+        transactions = session.get("transaction", [])
         src_ip = network.get("src_ip", "")
 
         if http.get("is_http") != True:

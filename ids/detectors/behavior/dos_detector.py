@@ -53,7 +53,7 @@ def detect_HTTP_Flood(sessions,HTTP_REQUEST_THRESHOLD,HTTP_REQUEST_RATE_THRESHOL
             if request_count > HTTP_REQUEST_THRESHOLD and request_rate > HTTP_REQUEST_RATE_THRESHOLD:
                evidence = " HTTP Request = " + str(request_count) + " AND Request Rate = "+str(request_rate)
                alert_detect_HTTP_Flood(network.get("src_ip"),evidence)
-            if duration > 120 and dst_port == 80 and forward_bytes < 1000 and forward_packets >= 2:
+            if duration > 120 and dst_port == 80 and forward_bytes < 1000 and forward_count >= 2:
                 evidence =" Duration > 120" + " dst_port = 80" + " forward bytes <1000"+ " forward packet >= 2"
                 alert_detect_HTTP_Flood(network.get("src_ip"),evidence)
     return
@@ -72,7 +72,6 @@ def detect_UDP_Flood(sessions,UDP_PACKET_THRESHOLD,UDP_TOTAL_BYTES_THRESHOLD):
     return
 
 def detect_ICMP_Flood(sessions,ICMP_COUNT_THRESHOLD,ICMP_TOTAL_BYTES_THRESHOLD):
-    ICMP_Count = 0
     list_ip_ICMP =[]
     Ping_of_death_list=[] #Return session
     for session in sessions:
@@ -82,7 +81,7 @@ def detect_ICMP_Flood(sessions,ICMP_COUNT_THRESHOLD,ICMP_TOTAL_BYTES_THRESHOLD):
         protocol = network.get("protocol","")
         total_bytes = flow.get("total_bytes",0)
         if protocol != "ICMP":
-            break
+            continue
         check = 0
         src_ip = network.get("src_ip","")
         for ip in list_ip_ICMP:
@@ -91,24 +90,23 @@ def detect_ICMP_Flood(sessions,ICMP_COUNT_THRESHOLD,ICMP_TOTAL_BYTES_THRESHOLD):
                 check = 1
                 break
         if check == 0 :
-            list_ip_ICMP.apend(
+            list_ip_ICMP.append(
                 {
                     "src_ip": src_ip,
                     "counts": 1
                 }
             )
-        if src_ip == ip.get("src_ip"):
-            if total_bytes > ICMP_TOTAL_BYTES_THRESHOLD:
-                Ping_of_death_list.append(session)
+        if total_bytes > ICMP_TOTAL_BYTES_THRESHOLD:
+            Ping_of_death_list.append(session)
     for ip in list_ip_ICMP:
         if ip.get("counts",0) > ICMP_COUNT_THRESHOLD:
-            evidence = "ICMP Count = " + str(ICMP_Count)
+            evidence = "ICMP Count = " + str(ip.get("count",0))
             alert_detect_ICMP_Flood (ip.get("src_ip",""),evidence)
 
     if Ping_of_death_list:
         for item in Ping_of_death_list:
             network = item.get("network",{})
-            evidence = "ICMP Size: " +str( (item.get("flow",{})).get("total_bytes",0))
+            evidence = "ICMP Size: " + str( (item.get("flow",{})).get("total_bytes",0))
             alert_detect_ICMP_Flood(network.get("src_ip"),evidence)
 
 def detect_dos_connection(sessions,DURATION_THRESHOLD,IP_COUNT_THRESHOLD):

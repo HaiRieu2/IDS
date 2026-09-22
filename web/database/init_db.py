@@ -14,8 +14,8 @@ def init_db():
     cursor.execute('''
         CREATE TABLE users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
+            username TEXT   UNIQUE,
+            password TEXT  ,
             email TEXT,
             role TEXT DEFAULT 'user',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -26,13 +26,13 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS truyen (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            author TEXT NOT NULL,
-            category TEXT NOT NULL,
+            title TEXT  ,
+            author TEXT  ,
+            category TEXT  ,
             description TEXT,
             image TEXT,
             views INTEGER DEFAULT 0,
-            status TEXT NOT NULL DEFAULT "Đang ra",
+            status TEXT   DEFAULT "Đang ra",
             create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -41,9 +41,9 @@ def init_db():
     cursor.execute('''
         CREATE TABLE comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            truyen_id INTEGER NOT NULL,
-            username TEXT NOT NULL,
-            content TEXT NOT NULL,
+            truyen_id INTEGER  ,
+            username TEXT  ,
+            content TEXT  ,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (truyen_id) REFERENCES truyen(id)
         )
@@ -54,7 +54,7 @@ def init_db():
     cursor.execute('''
         CREATE TABLE login_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
+            username TEXT  ,
             ip_address TEXT,
             success INTEGER,
             login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP

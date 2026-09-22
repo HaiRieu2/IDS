@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ truyen['title'] }} — TruyenHay</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="{{ url_for('index') }}" class="brand">
+      <div>
+        <div class="brand-text">TruyenHay</div>
+        <div class="brand-sub">Tiên hiệp | Huyền huyễn | Hiện đại</div>
+      </div>
+    </a>
+    <nav class="main-nav">
+      <a href="{{ url_for('index') }}">Trang chủ</a>
+      <a href="{{ url_for('truyen_list') }}">Truyện</a>
+      <form class="search-form" action="{{ url_for('truyen_list') }}" method="get">
+        <input type="text" name="q" placeholder="Tìm truyện...">
+        <button type="submit" aria-label="Tìm kiếm">🔍</button>
+      </form>
+      {% if session.get('username') %}
+        <a href="{{ url_for('logout') }}">Đăng xuất ({{ session.get('username') }})</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="cta">Đăng nhập</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+<section class="detail-hero">
+  {% set cover_img = truyen['image'] if truyen['image'] else 'tiennghich.jpg' %}
+  {% set cover_url = url_for('static', filename='images/' + cover_img) %}
+  <div class="detail-hero-bg" style="background-image: url('{{cover_url}}');"></div>
+  <div class="detail-inner">
+    <div class="detail-cover">
+      <img src="{{cover_url}}" alt="{{ truyen.title }}">
+    </div>
+    <div class="hero-info">
+      <span class="category-tag">{{ truyen['category']}}</span>
+      <h1>{{ truyen['title'] }}</h1>
+      <div class="author">Tác giả: {{ truyen['author'] }} &nbsp; &nbsp; Trạng thái: {{ truyen['status'] }}</div>
+      <p class="desc">{{ truyen['description'] }}</p>
+      <div class="stat-row">
+        <div class="stat"><b>{{ "{:,}".format(truyen['views'] or 0) }}</b>Lượt xem</div>
+        <div class="stat"><b>{{ comments|length }}</b>Bình luận</div>
+        <div class="stat"><b>#{{ truyen['id'] }}</b>Mã truyện</div>
+      </div>
+      <a href="#doc" class="btn btn-primary">▶ Đọc ngay</a>
+    </div>
+  </div>
+</section>
+
+<div class="comments-wrap" id="doc">
+  <h2>💬 Bình luận</h2>
+
+  <form class="comment-form" method="post" action="{{ url_for('truyen_detail', truyen_id=truyen['id']) }}">
+    <input type="text" name="username" placeholder="Tên của bạn"
+           value="{{ session.get('username', '') }}" required>
+    <textarea name="content" rows="3" placeholder="Chia sẻ cảm nhận của bạn về truyện này..." required></textarea>
+    <button type="submit" class="btn btn-primary">Gửi bình luận</button>
+  </form>
+
+  {% for c in comments %}
+  <div class="comment-item">
+    <div class="who">{{ c.username }}<span class="when">{{ c.created_at }}</span></div>
+    <div class="body">{{ c.content|safe }}</div>
+  </div>
+  {% else %}
+  <p style="color:var(--muted);">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+  {% endfor %}
+</div>
+
+<footer class="site-footer">
+  <div>© 2026 TruyenHay</div>
+  <div class="project-line">Đề tài: Tăng cường phát hiện tấn công (SQLi, XSS, DoS, Brute Force) dựa trên học máy / học sâu — Nhóm 1</div>
+</footer>
+
+</body>
+</html>

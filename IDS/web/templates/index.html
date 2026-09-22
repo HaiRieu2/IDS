@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TruyenHay — Đọc truyện online</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="{{ url_for('index') }}" class="brand">
+      <div>
+        <div class="brand-text">TruyenHay</div>
+        <div class="brand-sub">Tiên hiệp | Huyền huyễn | Hiện đại</div>
+      </div>
+    </a>
+    <nav class="main-nav">
+      <a href="{{ url_for('index') }}" class="active">Trang chủ</a>
+      <a href="{{ url_for('truyen_list') }}">Truyện</a>
+      <form class="search-form" action="{{ url_for('truyen_list') }}" method="get">
+        <input type="text" name="q" placeholder="Tìm truyện...">
+        <button type="submit" aria-label="Tìm kiếm">🔍</button>
+      </form>
+      {% if session.get('username') %}
+        <a href="{{ url_for('logout') }}">Đăng xuất ({{ session.get('username') }})</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="cta">Đăng nhập</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Chào mừng đến với TruyenHay</h1>
+  <p class="lead">Trang web đọc truyện online miễn phí với nhiều thể loại hấp dẫn.</p>
+  <div class="ink-divider"></div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2><span class="flame">🔥</span> Truyện HOT</h2>
+    <a href="{{ url_for('truyen_list') }}" class="see-all">Xem tất cả →</a>
+  </div>
+  <div class="truyen-grid">
+    {% for t in truyen_list %}
+    <a class="truyen-card" href="{{ url_for('truyen_detail', truyen_id=t['id']) }}">
+      <div class="truyen-cover">
+        <span class="badge-status">{{ t['status'] }}</span>
+        <img src="{{ url_for('static', filename='images/' + t['image']) }}" alt="{{ t['title'] }}">
+      </div>
+      <div class="truyen-meta">
+        <h3>{{ t['title'] }}</h3>
+        <div class="author">{{ t['author'] }}</div>
+        <div class="views">👁 {{ "{:,}".format(t['views']) }} lượt xem</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div>© 2026 TruyenHay </div>
+  <div class="project-line">Đề tài: Tăng cường phát hiện tấn công (SQLi, XSS, DoS, Brute Force) dựa trên học máy / học sâu — Nhóm 1</div>
+</footer>
+
+</body>
+</html>

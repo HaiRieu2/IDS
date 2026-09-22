@@ -355,9 +355,7 @@ def parse_packet(packet):
         if flags & 0x08:
             result["psh"] = 1
 
-        # URG
-        if flags & 0x20:
-            result["urg"] = 1
+
 
     # UDP
 

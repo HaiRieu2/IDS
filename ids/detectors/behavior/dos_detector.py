@@ -100,7 +100,7 @@ def detect_ICMP_Flood(sessions,ICMP_COUNT_THRESHOLD,ICMP_TOTAL_BYTES_THRESHOLD):
             Ping_of_death_list.append(session)
     for ip in list_ip_ICMP:
         if ip.get("counts",0) > ICMP_COUNT_THRESHOLD:
-            evidence = "ICMP Count = " + str(ip.get("count",0))
+            evidence = "ICMP Count = " + str(ip.get("counts",0))
             alert_detect_ICMP_Flood (ip.get("src_ip",""),evidence)
 
     if Ping_of_death_list:
@@ -133,7 +133,7 @@ def detect_dos (sessions,rules):
     SYN_FLAG_THRESHOLD = rules.get("SYN_FLAG_THRESHOLD",0) #1000
     HTTP_REQUEST_THRESHOLD = rules.get("HTTP_REQUEST_THRESHOLD",0) #1000
     HTTP_REQUEST_RATE_THRESHOLD = rules.get("HTTP_REQUEST_RATE_THRESHOLD",0) #10
-    UDP_PACKET_THRESHOLD = rules.get("SUDP_PACKET_THRESHOLD",0) #1000
+    UDP_PACKET_THRESHOLD = rules.get("UDP_PACKET_THRESHOLD",0) #1000
     UDP_TOTAL_BYTES_THRESHOLD = rules.get("UDP_TOTAL_BYTES_THRESHOLD",0) #65
     ICMP_COUNT_THRESHOLD = rules.get("ICMP_COUNT_THRESHOLD",0) #1000
     ICMP_TOTAL_BYTES_THRESHOLD = rules.get("ICMP_TOTAL_BYTES_THRESHOLD",0) #65535

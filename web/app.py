@@ -121,7 +121,7 @@ def login():
             success = user is not None
         except sqlite3.Error as e:
             success = False
-            error = f"Loi: {e}"
+            error = f"Loi: {e}",401
 
         #Ghi log
         cur.execute(
@@ -136,8 +136,8 @@ def login():
             return redirect(url_for("index"))
         elif error is None:
             error = "Sai tên đăng nhập hoặc mật khẩu !"
-
-    return render_template("login.html", error=error, success=None),401
+    status_code = 401 if error else 200
+    return render_template("login.html", error=error, success=None),status_code
 
 @app.route("/logout")
 def logout():

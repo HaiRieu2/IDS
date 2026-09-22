@@ -119,7 +119,7 @@ class LiveCapture:
 
             elif http.get("type") == "response":
 
-                transaction = http["transactions"][1]
+                transaction = http["transactions"][0]
 
                 print(
                     f"[HTTP] {transaction['response']['status_code']} "

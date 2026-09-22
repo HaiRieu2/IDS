@@ -8,8 +8,8 @@
     "ICMP_TOTAL_BYTES_THRESHOLD": 65535,
     "DURATION_THRESHOLD": 9600,
     "IP_COUNT_THRESHOLD": 2000,
-    "MAX_FAILED_LOGINS": 5,
-    "REQUEST_RATE_THRESHOLD": 2,
+    "MAX_FAILED_LOGINS": 2,
+    "REQUEST_RATE_THRESHOLD": 0.1,
     "XSS_PATTERNS": [
         "<\\s*script\\b",
         "javascript\\s*:",

@@ -64,45 +64,31 @@ ml
     "http": {
         "is_http": true,
 
-        "transactions": 
-            {
-                "requests": [
+        "transactions":[
                     {
-                    "method": "POST",
-                    "host": "192.168.10.20",
-                    "uri": "/login",
-                    "version": "HTTP/1.1",
-                    "body": "username=admin&password=123",
-                    "payload": {
-                        "length": 35,
-                        "parameter_count": 2,
-                        "special_character_count": 0,
-                        "encoded_character_count": 0
-                    }
-                },
-                    {
-                    "method": "POST",
-                    "host": "192.168.10.20",
-                    "uri": "/login",
-                    "version": "HTTP/1.1",
-                    "body": "username=admin&password=123",
-                    "payload": {
-                        "length": 35,
-                        "parameter_count": 2,
-                        "special_character_count": 0,
-                        "encoded_character_count": 0
-                    }
-                }
-            ],
-            
+                        "request": {
+                            "method": "",
+                            "host": "",
+                            "uri": "",
+                            "version": "",
 
-                "responses" : [
-                    {
-                    "status_code": 401,
-                    "content_length": 25
-                }
-            ]
-        }
+                            "body": "",
+
+                            "payload": {
+                                "length": 0,
+                                "parameter_count": 0,
+                                "special_character_count": 0,
+                                "encoded_character_count": 0
+                            }
+                        },
+
+                        "response": {
+                            "status_code": 0,
+                            "content_length": 0
+                        }
+                    }
+                ]
+            
         
     },
 

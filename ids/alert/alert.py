@@ -5,7 +5,7 @@ import os
 import json
 
 ALERT_COUNTER_FILE = CONFIG_DATA/"alert_counter.txt"
-ALERT_FILE = LOGS_DIR/"alert.json"
+ALERT_FILE = LOGS_DIR/"alerts.json"
 
 
 

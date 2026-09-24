@@ -1,10 +1,18 @@
+import copy
 import math
-from collections import defaultdict
 from datetime import datetime, timezone
+
+from .packet_parser import extract_http
+from .tcp_reassembly import TCPStreamReassembler
+
 
 class SessionBuilder:
 
-    def __init__(self, session_timeout=120):
+    # Gioi han so transaction giu lai moi session (chong phinh bo nho
+    # voi cac ket noi keep-alive dai)
+    MAX_TRANSACTIONS = 100
+
+    def __init__(self, session_timeout=120, max_session_duration=120):
 
         # session_id -> session dict
         self.sessions = {}
@@ -13,43 +21,36 @@ class SessionBuilder:
 
         self.session_counter = 0
 
+        # Sau 120s ma session khong nhan duoc goi tin moi -> dong session
         self.session_timeout = session_timeout
 
-    # Session ID
+        # Cat cung session o 120s
+        self.max_session_duration = max_session_duration
+
+    # =================================================
+    # Session ID / flow key
+    # =================================================
 
     def _new_session_id(self):
         self.session_counter += 1
 
         return f"S{self.session_counter:03d}"
 
-    # Flow key
-
     def _get_flow_key(self, packet):
+        """Khoa hai chieu: sap xep 2 endpoint de forward/backward cung 1 flow."""
 
-        endpoint1 = (
-            packet["src_ip"],
-            packet["src_port"]
-        )
+        endpoint1 = (packet["src_ip"], packet["src_port"])
+        endpoint2 = (packet["dst_ip"], packet["dst_port"])
 
-        endpoint2 = (
-            packet["dst_ip"],
-            packet["dst_port"]
-        )
+        endpoints = sorted([endpoint1, endpoint2])
 
-        endpoints = sorted([
-            endpoint1,
-            endpoint2
-        ])
+        return (endpoints[0], endpoints[1], packet["protocol"])
 
-        return (
-            endpoints[0],
-            endpoints[1],
-            packet["protocol"]
-        )
-
+    # =================================================
     # Tao session
+    # =================================================
 
-    def _create_session(self, packet):
+    def _create_session(self, packet, forward_key=None, prev_session_id=None):
 
         session_id = self._new_session_id()
 
@@ -58,10 +59,14 @@ class SessionBuilder:
         session = {
             "session_id": session_id,
 
+            # Dung de cat session tu cung flow khi qua 120s (max_session_duration)
+            "_prev_session_id": prev_session_id,
+            "_next_session_id": None,
+
             "timestamp": {
                 "start": timestamp,
                 "end": timestamp,
-                "duration": 0
+                "duration": 0,
             },
 
             "network": {
@@ -71,7 +76,7 @@ class SessionBuilder:
                 "src_port": packet["src_port"],
                 "dst_port": packet["dst_port"],
 
-                "protocol": packet["protocol"]
+                "protocol": packet["protocol"],
             },
 
             "flag": {
@@ -81,21 +86,21 @@ class SessionBuilder:
                 "fin": 0,
                 "rst": 0,
                 "psh": 0,
-                "ack_count": 0
+                "urg": 0,
+                "ack_count": 0,
+            },
+
+            "icmp": {
+                "type": packet.get("icmp_type"),
+                "code": packet.get("icmp_code"),
+                "count": 0,
             },
 
             "packets": {
                 "total": 0,
 
-                "forward": {
-                    "count": 0,
-                    "bytes": 0
-                },
-
-                "backward": {
-                    "count": 0,
-                    "bytes": 0
-                }
+                "forward": {"count": 0, "bytes": 0},
+                "backward": {"count": 0, "bytes": 0},
             },
 
             "flow": {
@@ -103,72 +108,73 @@ class SessionBuilder:
                 "bytes_per_second": 0,
                 "packets_per_second": 0,
 
+                "fwd_packet_per_second": 0,
+                "bwd_packet_per_second": 0,
+
+                #forward: lay o goi dau tien
+                #backward:lay o goi cuoi
+                "init_win_bytes_forward": None,
+                "init_win_bytes_backward": None,
+
                 "packet_length": {
                     "min": None,
                     "max": None,
                     "mean": 0,
-                    "std": 0
+                    "std": 0,
                 },
 
                 "iat": {
                     "mean": 0,
                     "std": 0,
                     "min": None,
-                    "max": None
-                }
+                    "max": None,
+                },
             },
 
             "http": {
                 "is_http": False,
-
-                "transactions": [
-                    {
-                        "request": {
-                            "method": "",
-                            "host": "",
-                            "uri": "",
-                            "version": "",
-
-                            "body": "",
-
-                            "payload": {
-                                "length": 0,
-                                "parameter_count": 0,
-                                "special_character_count": 0,
-                                "encoded_character_count": 0
-                            }
-                        },
-
-                        "response": {
-                            "status_code": 0,
-                            "content_length": 0
-                        }
-                    }
-                ]
+                "transactions": [],
             },
 
             "connection": {
                 "request_count": 0,
                 "response_count": 0,
                 "status_code": 0,
-                "_state": "active"  # active | closed | timed_out
+                "_state": "active",  # active | closed | timed_out
             },
 
-            # Internal fields (không xuất ra ngoài get_sessions())
-            "_packet_lengths": [],
-            "_timestamps": [],
-            "_forward_key": (
-                packet["src_ip"],
-                packet["src_port"]
-            ),
+            # ---- Internal (khong xuat ra get_sessions()) ----
+            "_forward_key": forward_key or (packet["src_ip"], packet["src_port"]),
             "_last_seen": timestamp,
             "_fin_seen": set(),
-            "_closed": False
+            "_closed": False,
+
+            # Thong ke tang dan (Welford) - thay cho viec luu toan bo
+            "_len_count": 0,
+            "_len_mean": 0.0,
+            "_len_m2": 0.0,
+            "_len_min": None,
+            "_len_max": None,
+
+            "_iat_count": 0,
+            "_iat_mean": 0.0,
+            "_iat_m2": 0.0,
+            "_iat_min": None,
+            "_iat_max": None,
+
+            "_prev_timestamp": None,
+
+            # Ghep lai TCP payload theo tung chieu truoc khi parse HTTP,
+            # tranh mat du lieu khi 1 request/response bi cat thanh nhieu
+            # goi
+            "_tcp_stream": TCPStreamReassembler(),
         }
 
         return session
 
-    # Update TCP
+    # =================================================
+    # Update tung phan
+    # =================================================
 
     def _update_tcp(self, session, packet):
 
@@ -180,6 +186,7 @@ class SessionBuilder:
         flag["fin"] += packet["fin"]
         flag["rst"] += packet["rst"]
         flag["psh"] += packet["psh"]
+        flag["urg"] += packet.get("urg", 0)
 
         if packet["ack"]:
             flag["ack_count"] += 1
@@ -192,71 +199,110 @@ class SessionBuilder:
 
         if packet["fin"]:
 
-            direction = (
-                packet["src_ip"],
-                packet["src_port"]
-            )
+            direction = (packet["src_ip"], packet["src_port"])
 
             session["_fin_seen"].add(direction)
 
-            # Hoan tat khi ca 2 chieu gui FIN
+            # Hoan tat khi ca 2 chieu deu gui FIN
             if len(session["_fin_seen"]) >= 2:
                 session["_closed"] = True
                 session["connection"]["_state"] = "closed"
 
-    # Forward / Backward
+    def _update_icmp(self, session, packet):
 
-    def _update_direction(self, session, packet):
+        session["icmp"]["count"] += 1
 
-        packet_direction = ( 
-            packet["src_ip"],
-            packet["src_port"]
-        )
+        # Giu type/code cua goi dau tien neu chua co
+        if session["icmp"]["type"] is None:
+            session["icmp"]["type"] = packet.get("icmp_type")
+            session["icmp"]["code"] = packet.get("icmp_code")
+
+    @staticmethod
+    def _get_direction(session, packet):
+
+        packet_direction = (packet["src_ip"], packet["src_port"])
 
         if packet_direction == session["_forward_key"]:
+            return "forward"
 
-            direction = "forward"
+        return "backward"
 
-        else:
-            direction = "backward"
+    def _update_direction(self, session, direction, packet):
 
         session["packets"][direction]["count"] += 1
+        session["packets"][direction]["bytes"] += packet["packet_length"]
 
-        session["packets"][direction]["bytes"] += \
-            packet["packet_length"]
-
-    # HTTP
-
-    def _update_http(self, session, packet):
-
-        http = packet.get("http")
+    def _update_init_window(self, session, direction, packet):
         
-        if not http or not http.get("is_http"):
+        if packet["protocol"] != "TCP":
             return
 
+        if direction == "forward":
+            if session["flow"]["init_win_bytes_forward"] is None:
+                session["flow"]["init_win_bytes_forward"] = packet.get("window", 0)
+        else:
+            session["flow"]["init_win_bytes_backward"] = packet.get("window", 0)
+
+    def _feed_tcp_stream(self, session, direction, packet):
+        """
+        Day raw payload cua goi tin vao buffer ghep luong TCP cua session.
+        Voi moi HTTP message da HOAN CHINH (co the > 1 neu keep-alive),
+        parse va cap nhat vao session['http'].
+        """
+
+        payload = packet.get("payload")
+
+        if not payload:
+            return
+
+        complete_messages = session["_tcp_stream"].feed(direction, payload)
+
+        for message_bytes in complete_messages:
+            http_result = extract_http(message_bytes)
+
+            if http_result["is_http"]:
+                self._apply_http_result(session, http_result)
+
+    def _apply_http_result(self, session, http):
+
         session["http"]["is_http"] = True
+
         transactions = session["http"]["transactions"]
-        packet_transaction = http["transactions"][0]
+
+        incoming = http["transactions"][0]
 
         if http.get("type") == "request":
-            # Nếu transaction cuối vẫn còn "trống" (chưa có request thật) thì dùng lại,
-            # ngược lại tạo transaction mới cho request tiếp theo trong cùng session
-            if transactions and transactions[-1]["request"]["method"] == "" \
-            and transactions[-1]["response"]["status_code"] == 0:
-                transactions[-1]["request"] = packet_transaction["request"]
-            else:
-                transactions.append({
-                    "request": packet_transaction["request"],
-                    "response": {"status_code": 0, "content_length": 0}
-                })
+
             session["connection"]["request_count"] += 1
 
+            transactions.append(copy.deepcopy(incoming))
+
         elif http.get("type") == "response":
-            if transactions:
-                transactions[-1]["response"] = packet_transaction["response"]
+
             session["connection"]["response_count"] += 1
 
-    # Add packet to session
+            status_code = incoming["response"]["status_code"]
+
+            session["connection"]["status_code"] = status_code
+
+            # Gan response vao request gan nhat con dang cho
+            for transaction in reversed(transactions):
+                if transaction["response"]["status_code"] == 0:
+                    transaction["response"] = copy.deepcopy(
+                        incoming["response"]
+                    )
+                    break
+            else:
+                # Response khong khop request nao (vd. bat giua chung flow)
+                transactions.append(copy.deepcopy(incoming))
+
+        # Gioi han bo nho
+        if len(transactions) > self.MAX_TRANSACTIONS:
+            del transactions[: len(transactions) - self.MAX_TRANSACTIONS]
+
+    # =================================================
+    # Add packet
+    # =================================================
 
     def add_packet(self, packet):
 
@@ -266,54 +312,50 @@ class SessionBuilder:
 
         session = self._get_or_create_session(flow_key, timestamp, packet)
 
-        # Timestamp / last_seen
+        # --- Timestamp / duration ---
 
         session["timestamp"]["end"] = timestamp
         session["_last_seen"] = timestamp
 
-        session["_timestamps"].append(timestamp)
-
-        # Duration
-
-        duration = (
-            session["timestamp"]["end"]
-            - session["timestamp"]["start"]
-        )
+        duration = timestamp - session["timestamp"]["start"]
 
         session["timestamp"]["duration"] = max(0, duration)
 
-        # Packets: total
-        
+        # --- Counters ---
+
         session["packets"]["total"] += 1
-
-        # Packet_length
-
-        session["_packet_lengths"].append(packet["packet_length"])
-
-        # Flow : total_bytes
-
         session["flow"]["total_bytes"] += packet["packet_length"]
 
-        # Direction
+        # --- Thong ke tang dan ---
 
-        self._update_direction(session,packet)
+        self._accumulate_length(session, packet["packet_length"])
+        self._accumulate_iat(session, timestamp)
 
-        # TCP
+        # --- Direction ---
+
+        direction = self._get_direction(session, packet)
+
+        self._update_direction(session, direction, packet)
+        self._update_init_window(session, direction, packet)
+
+        # --- Theo giao thuc ---
 
         if packet["protocol"] == "TCP":
-
             self._update_tcp(session, packet)
 
-        # HTTP
+        elif packet["protocol"] in ("ICMP", "ICMPv6"):
+            self._update_icmp(session, packet)
 
-        self._update_http(session, packet)
+        # --- HTTP (ghep lai theo luong TCP truoc khi parse) ---
 
-        # Flow
+        if packet["protocol"] == "TCP":
+            self._feed_tcp_stream(session, direction, packet)
+
+        # --- Flow stats ---
+
         self._update_statistics(session)
 
         return session
-
-    # ==================
 
     def _get_or_create_session(self, flow_key, timestamp, packet):
 
@@ -321,93 +363,156 @@ class SessionBuilder:
 
         session = self.sessions.get(session_id) if session_id else None
 
+        is_idle_timeout = (
+            session is not None
+            and not session["_closed"]
+            and (timestamp - session["_last_seen"]) > self.session_timeout
+        )
+
+        is_duration_exceeded = (
+            session is not None
+            and not session["_closed"]
+            and (timestamp - session["timestamp"]["start"]) >= self.max_session_duration
+        )
+
         needs_new_session = (
             session is None
             or session["_closed"]
-            or (timestamp - session["_last_seen"]) > self.session_timeout
+            or is_idle_timeout
+            or is_duration_exceeded
         )
 
         if needs_new_session:
 
+            forward_key = None
+            prev_session_id = None
+
             if session is not None and not session["_closed"]:
-                session["connection"]["_state"] = "timed_out"
+
+                if is_duration_exceeded:
+                    session["connection"]["_state"] = "rotated"
+                    forward_key = session["_forward_key"]
+                    prev_session_id = session["session_id"]
+                else:
+                    session["connection"]["_state"] = "timed_out"
+
                 session["_closed"] = True
 
-            session = self._create_session(packet)
+            new_session = self._create_session(
+                packet, forward_key=forward_key, prev_session_id=prev_session_id
+            )
+
+            if prev_session_id is not None:
+                session["next_session_id"] = new_session["session_id"]
+
+            session = new_session
 
             self.sessions[session["session_id"]] = session
             self._active_by_flow[flow_key] = session["session_id"]
 
         return session
 
-    # _update_statistics
+    # =================================================
+    # Thong ke (Welford)
+    # =================================================
+
+    @staticmethod
+    def _welford(count, mean, m2, value):
+
+        count += 1
+        delta = value - mean
+        mean += delta / count
+        m2 += delta * (value - mean)
+
+        return count, mean, m2
+
+    def _accumulate_length(self, session, length):
+
+        session["_len_count"], session["_len_mean"], session["_len_m2"] = (
+            self._welford(
+                session["_len_count"],
+                session["_len_mean"],
+                session["_len_m2"],
+                length,
+            )
+        )
+
+        if session["_len_min"] is None or length < session["_len_min"]:
+            session["_len_min"] = length
+
+        if session["_len_max"] is None or length > session["_len_max"]:
+            session["_len_max"] = length
+
+    def _accumulate_iat(self, session, timestamp):
+
+        previous = session["_prev_timestamp"]
+
+        session["_prev_timestamp"] = timestamp
+
+        if previous is None:
+            return
+
+        iat = timestamp - previous
+
+        session["_iat_count"], session["_iat_mean"], session["_iat_m2"] = (
+            self._welford(
+                session["_iat_count"],
+                session["_iat_mean"],
+                session["_iat_m2"],
+                iat,
+            )
+        )
+
+        if session["_iat_min"] is None or iat < session["_iat_min"]:
+            session["_iat_min"] = iat
+
+        if session["_iat_max"] is None or iat > session["_iat_max"]:
+            session["_iat_max"] = iat
+
     def _update_statistics(self, session):
 
         duration = session["timestamp"]["duration"]
 
         total_bytes = session["flow"]["total_bytes"]
-
         total_packets = session["packets"]["total"]
 
-        # Bytes/Packets per second
+        fwd_packets = session["packets"]["forward"]["count"]
+        bwd_packets = session["packets"]["backward"]["count"]
 
         if duration > 0:
-
             session["flow"]["bytes_per_second"] = total_bytes / duration
             session["flow"]["packets_per_second"] = total_packets / duration
-
+            session["flow"]["fwd_packet_per_second"] = fwd_packets / duration
+            session["flow"]["bwd_packet_per_second"] = bwd_packets / duration
         else:
-
             session["flow"]["bytes_per_second"] = 0
             session["flow"]["packets_per_second"] = 0
+            session["flow"]["fwd_packet_per_second"] = 0
+            session["flow"]["bwd_packet_per_second"] = 0
 
         # Packet length
 
-        lengths = session["_packet_lengths"]
-
-        if lengths:
-
-            mean = sum(lengths) / len(lengths) #Trung binh
-
-            variance = sum(
-                (x - mean) ** 2
-                for x in lengths
-            ) / len(lengths)
-
+        if session["_len_count"] > 0:
             session["flow"]["packet_length"] = {
-                "min": min(lengths),
-                "max": max(lengths),
-                "mean": mean,
-                "std": math.sqrt(variance) #std cho biet do dai packet thuong lech khoi mean khoang bao nhieu
+                "min": session["_len_min"],
+                "max": session["_len_max"],
+                "mean": session["_len_mean"],
+                "std": math.sqrt(session["_len_m2"] / session["_len_count"]),
             }
 
-        # IAT: thoi gian giua 2 goi tin lien tiep
+        # IAT
 
-        timestamps = session["_timestamps"]
-
-        if len(timestamps) >= 2:
-
-            iats = [
-                timestamps[i] - timestamps[i - 1]
-                for i in range(1, len(timestamps))
-            ]
-
-            mean = sum(iats) / len(iats)
-
-            variance = sum(
-                (x - mean) ** 2
-                for x in iats
-            ) / len(iats)
-
+        if session["_iat_count"] > 0:
             session["flow"]["iat"] = {
-
-                "mean": mean,
-                "std": math.sqrt(variance),
-                "min": min(iats),
-                "max": max(iats)
+                "mean": session["_iat_mean"],
+                "std": math.sqrt(session["_iat_m2"] / session["_iat_count"]),
+                "min": session["_iat_min"],
+                "max": session["_iat_max"],
             }
 
-    # Dong cac session qua session_timeout (Goi dinh ky)
+    # =================================================
+    # Dong / lay / xoa session
+    # =================================================
 
     def close_expired_sessions(self, current_time=None):
 
@@ -430,7 +535,22 @@ class SessionBuilder:
 
         return expired_ids
 
-    # Get session
+    def close_all_sessions(self):
+        """Dong toan bo session dang mo (goi khi dung capture)."""
+
+        closed_ids = []
+
+        for session_id, session in self.sessions.items():
+
+            if session["_closed"]:
+                continue
+
+            session["_closed"] = True
+            session["connection"]["_state"] = "closed"
+
+            closed_ids.append(session_id)
+
+        return closed_ids
 
     def get_sessions(self, only_closed=False):
 
@@ -441,25 +561,32 @@ class SessionBuilder:
             if only_closed and not session["_closed"]:
                 continue
 
-            clean_session = {
+            result.append(self._clean(session))
+
+        return result
+
+    @staticmethod
+    def _clean(session):
+        
+        return copy.deepcopy(
+            {
                 key: value
                 for key, value in session.items()
                 if not key.startswith("_")
             }
+        )
 
-            result.append(clean_session)
-
-        return result
-
-    # Xoa cac session da dong
+    def snapshot(self, session):
+        """Ban copy doc lap, san sang json.dumps() cua mot session."""
+        return self._clean(session)
 
     def clear_closed_sessions(self):
 
-        closed_ids = [
+        closed_ids = {
             session_id
             for session_id, session in self.sessions.items()
             if session["_closed"]
-        ]
+        }
 
         for session_id in closed_ids:
             del self.sessions[session_id]

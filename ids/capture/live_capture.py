@@ -4,10 +4,15 @@ import json
 import os
 import time
 import queue
+import threading
 from .packet_parser import parse_packet
 from .session_builder import SessionBuilder
-from config.path import SESSION_DATA
+from .ip_reassembly import IPDefragmenter
+from .dedup import PacketDeduplicator
+from config.path import LOGS_DIR
 from config.path import CONFIG_DATA
+
+
 
 class LiveCapture:  
 
@@ -15,8 +20,9 @@ class LiveCapture:
         self,
         interface=None,
         bpf_filter=None,
-        session_timeout=120, #120 di   
-        output_file= SESSION_DATA/"sessions.json",
+        session_timeout=120,
+        max_session_duration=120,
+        output_file= LOGS_DIR/"sessions.json",
         output_session_counter_file= CONFIG_DATA/"session_counter.txt",
         autosave_interval=30,
 
@@ -28,8 +34,16 @@ class LiveCapture:
         self.bpf_filter = bpf_filter
 
         self.session_builder = SessionBuilder(
-            session_timeout=session_timeout
+            session_timeout=session_timeout,
+            max_session_duration=max_session_duration,
         )
+
+        # Ghep lai IP fragment truoc khi parse, tranh mat du lieu (VD Ping
+        # of Death bi chia thanh nhieu fragment nho hon MTU).
+        self._ip_defragmenter = IPDefragmenter()
+
+        # Loai bo goi tin bi bat trung 
+        self._deduplicator = PacketDeduplicator()
 
         self.output_file = output_file
 
@@ -49,8 +63,6 @@ class LiveCapture:
         self._last_packet_time = None 
 
 
-
-    #Put packet vao queue
     def put_packet(self,packet):
         self.packet_queue.put(packet)
         return
@@ -61,6 +73,17 @@ class LiveCapture:
 
         try:
 
+            # Loai goi tin bi bat trung 
+            if self._deduplicator.is_duplicate(bytes(packet)):
+                return
+
+            # Ghep IP fragment. Neu day la 1 fragment ma nhom chua du de
+            # ghep -> tra ve None, cho fragment tiep theo den.
+            packet = self._ip_defragmenter.process(packet)
+
+            if packet is None:
+                return
+
             parsed = parse_packet(packet)
 
             if parsed is None:
@@ -68,15 +91,15 @@ class LiveCapture:
 
             self._last_packet_time = parsed["timestamp"]
 
-            #packet_queue.put(parsed)
-            session = self.session_builder.add_packet(parsed)  #Ket qua cua add_packet co quan trong cho 2 ham duoi khong
+            session = self.session_builder.add_packet(parsed)
+
             
+
             self._log_packet(parsed)
 
             self._maybe_autosave()
-
-            return session
-            
+            if session["_closed"]:
+                return (self.session_builder.snapshot(session))
 
         except Exception as e:
 
@@ -137,6 +160,10 @@ class LiveCapture:
 
         self._last_autosave = now
 
+        # Don cac nhom IP fragment qua han chua ghep xong, tranh ro ri bo
+        # nho neu bi tan cong bang fragment co y khong gui du.
+        self._ip_defragmenter.cleanup(current_time=self._last_packet_time)
+
         expired = self.session_builder.close_expired_sessions(
             current_time=self._last_packet_time
         )
@@ -149,6 +176,19 @@ class LiveCapture:
         self.save_session_counter()
 
         self.session_builder.clear_closed_sessions()
+
+    # Thread auto_save
+    def _autosave_worker(self):
+        while self._running:
+            time.sleep(5)
+
+            if not self._running:
+                break
+
+            try:
+                self._maybe_autosave()
+            except Exception as e:
+                print(f"[ERROR] Autosave worker: {e}")
 
     # Start capture (live interface)
 
@@ -173,25 +213,40 @@ class LiveCapture:
         self._running = True
 
         try:
+            autosave_thread = threading.Thread(
+                target=self._autosave_worker,
+                daemon=True
+            )
+            autosave_thread.start()
 
-            while self._running:
-
-                sniff(
-                    iface=self.interface,
-                    filter=self.bpf_filter,
-                    prn=self.put_packet,#(process_packet) #queue
-                    store=False,
-                    timeout=10
-                )
-                self._maybe_autosave()
+            sniff(
+                iface=self.interface,
+                filter=self.bpf_filter,
+                prn=self.put_packet,
+                store=False
+            )
 
         except KeyboardInterrupt:
+            print("\n[!] Stopped by user.")
 
+        finally:
             self._running = False
-            raise
+            self.flush()
 
     def stop(self):
         self._running = False
+
+    def flush(self):
+        """Dong moi session con mo va ghi ra file (goi khi ket thuc capture)."""
+
+        closed = self.session_builder.close_all_sessions()
+
+        if closed:
+            print(f"[+] Closed {len(closed)} open session(s) on shutdown.")
+
+        self.save_sessions()
+        self.save_session_counter()
+        self.session_builder.clear_closed_sessions()
 
     # =================================================
     # Đọc từ file pcap có sẵn (offline), hữu ích cho việc
@@ -225,7 +280,7 @@ class LiveCapture:
 
         sessions = self.get_sessions(only_closed=only_closed)
 
-        output_dir = os.path.dirname(self.output_file)
+        output_dir = os.path.dirname(os.fspath(self.output_file))
 
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
@@ -239,27 +294,24 @@ class LiveCapture:
         return self.output_file
 
     def save_session_counter(self):
-        
-        sessions = self.get_sessions()
 
-        output_session_counter_dir = os.path.dirname(self.output_session_counter_file)
+        output_session_counter_dir = os.path.dirname(
+            os.fspath(self.output_session_counter_file)
+        )
 
         if output_session_counter_dir:
             os.makedirs(output_session_counter_dir, exist_ok=True)
 
+        counter = self.session_builder.session_counter
+
         with open(self.output_session_counter_file, "w", encoding="utf-8") as f:
-
-            session = sessions[-1] if sessions else None
-
-            session_id = session["session_id"] if session else 0
-
-            f.write(str(session_id[1:]))
+            f.write(str(counter))
 
         return self.output_session_counter_file
 
     def load_session_counter(self):
 
-        if os.path.exists(self.output_session_counter_file):
+        if os.path.exists(os.fspath(self.output_session_counter_file)):
             with open(self.output_session_counter_file, "r", encoding="utf-8") as f:
                 session_id = f.read().strip()
                 return int(session_id) if session_id.isdigit() else 0

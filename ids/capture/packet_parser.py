@@ -304,6 +304,8 @@ def parse_packet(packet):
 
         "tcp_flags": "",
 
+        "window": 0, # Truong trong SYN
+
         "syn": 0,
         "syn_ack": 0,
         "ack": 0,
@@ -328,6 +330,8 @@ def parse_packet(packet):
         flags = tcp.flags
 
         result["tcp_flags"] = str(flags)
+
+        result["window"] = int(tcp.window)
 
         # SYN
         if flags & 0x02:

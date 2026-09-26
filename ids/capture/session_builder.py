@@ -105,20 +105,20 @@ class SessionBuilder:
 
             "flow": {
                 "total_bytes": 0,
-                "bytes_per_second": 0,
-                "packets_per_second": 0,
+                "bytes_per_second": 0.0,
+                "packets_per_second": 0.0,
 
-                "fwd_packet_per_second": 0,
-                "bwd_packet_per_second": 0,
+                "fwd_packet_per_second": 0.0,
+                "bwd_packet_per_second": 0.0,
 
                 #forward: lay o goi dau tien
                 #backward:lay o goi cuoi
-                "init_win_bytes_forward": None,
-                "init_win_bytes_backward": None,
+                "init_win_bytes_forward": 0.0,
+                "init_win_bytes_backward": 0.0,
 
                 "packet_length": {
-                    "min": None,
-                    "max": None,
+                    "min": 0.0,
+                    "max": 0.0,
                     "mean": 0,
                     "std": 0,
                 },
@@ -126,8 +126,8 @@ class SessionBuilder:
                 "iat": {
                     "mean": 0,
                     "std": 0,
-                    "min": None,
-                    "max": None,
+                    "min": 0.0,
+                    "max": 0.0,
                 },
             },
 

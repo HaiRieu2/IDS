@@ -25,7 +25,7 @@ def worker_xu_ly(capture):
             if session:
                 behavior_engine(session,rules)
                 signature_engine(session,rules)
-                #machine_learning_engine(session)
+                machine_learning_engine(session)
             # Đánh dấu task trong queue đã hoàn thành
             
         except Exception as e:

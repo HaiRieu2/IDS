@@ -17,16 +17,16 @@ ALERT_FILE = LOGS_DIR / "alerts.json"
 ALERT_COOLDOWN_SECONDS = 60
 
 _alert_lock = threading.Lock()
-_last_alert_time = {}  # (dedup_key, src_ip) -> timestamp lan canh bao gan nhat
+_last_alert_time = {}  # (dedup_key, src_ip) : 1s -> timestamp lan canh bao gan nhat
 
 
 def _is_in_cooldown(dedup_key, src_ip):
     """
-    True neu (dedup_key, src_ip) vua duoc canh bao trong ALERT_COOLDOWN_SECONDS
+    True neu (dedup_key, src_ip) vua duoc canh bao trong ALERT_COOLD    OWN_SECONDS
     giay gan day (nen bo qua lan nay). Thread-safe.
     """
     now = time.time()
-    key = (dedup_key, src_ip)
+    key = (dedup_key, src_ip) #(DoS,192.168.1.1) 
 
     with _alert_lock:
         last_time = _last_alert_time.get(key, 0)
@@ -100,11 +100,6 @@ def _make_and_save_alert(src_ip, attack_type, engine, severity, evidence, dedup_
     return alert
 
 
-# ==================================================================
-# Cac ham alert cu the - GIU NGUYEN ten ham va so tham so (src_ip, evidence)
-# nhu file goc de khong phai sua lai brute_force_detector.py / dos_detector.py
-# ==================================================================
-
 def alert_detect_brute_force(src_ip, evidence):
     return _make_and_save_alert(
         src_ip, "Web Attack - Brute Force", "behavior", "high", evidence,
@@ -161,8 +156,8 @@ def alert_detect_sqli(src_ip, payload):
     )
 
 
-def alert_machine_learning(attack_type):
+def alert_machine_learning(src_ip,attack_type):
     return _make_and_save_alert(
-        "", "DoS", "machine learning", "high", attack_type,
+        src_ip, attack_type, "machine learning", "high",attack_type,
         dedup_key=f"ml_{attack_type}",
     )

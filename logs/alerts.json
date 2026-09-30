@@ -1,0 +1,1 @@
+{"alert_id": "A4540", "timestamp": "2026-09-26T20:04:04.615112+00:00", "src_ip": "192.168.110.240", "attack_type": "DoS", "engine": "behavior", "severity": "high", "evidence": "So co SYN = 22 (nguong: 20)"}

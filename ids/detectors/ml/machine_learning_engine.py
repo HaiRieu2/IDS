@@ -7,7 +7,10 @@ def ml_engine(session):
     X = np.array([features])
     prediction = model.predict(X)
     result = prediction[0]
-    alert_machine_learning(result)
+    if result != "BENIGN":
+        network = session.get("network",{})
+        ip_src = network.get("ip_src",{})
+        alert_machine_learning(ip_src,result)
     return
 
 

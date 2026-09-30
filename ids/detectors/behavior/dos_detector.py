@@ -1,3 +1,4 @@
+
 """
 DoS / DDoS Detector
 1. SYN Flood            : 1 IP co tong so co SYN vuot nguong
@@ -20,7 +21,7 @@ from ids.alert.alert import (
 )
 
 
-def detect_SYN_Flood(sessions, SYN_FLAG_THRESHOLD, DISTRIBUTED_IP_THRESHOLD=0):
+def detect_SYN_Flood(sessions, SYN_FLAG_THRESHOLD, DISTRIBUTED_IP_THRESHOLD=1):
     syn_by_ip = {}
 
     for session in sessions:
@@ -59,13 +60,13 @@ def detect_HTTP_Flood(
     sessions,
     HTTP_REQUEST_THRESHOLD,
     HTTP_REQUEST_RATE_THRESHOLD,
-    HTTP_REQUEST_THRESHOLD_PER_IP=0,
-    HTTP_CONNECTION_COUNT_THRESHOLD=0,
-    SLOW_HTTP_MIN_DURATION=120,
-    SLOW_HTTP_MAX_BYTES=1000,
-    SLOW_HTTP_MIN_PACKETS=2,
-    SLOW_HTTP_PORT=80,
-    window_seconds=100,
+    HTTP_REQUEST_THRESHOLD_PER_IP,
+    HTTP_CONNECTION_COUNT_THRESHOLD,
+    SLOW_HTTP_MIN_DURATION,
+    SLOW_HTTP_MAX_BYTES,
+    SLOW_HTTP_MIN_PACKETS,
+    SLOW_HTTP_PORT,
+    window_seconds,
     MIN_DURATION_FOR_RATE=1,
 ):
     """
@@ -267,7 +268,7 @@ def detect_dos_connection(sessions, DURATION_THRESHOLD, IP_COUNT_THRESHOLD):
     return
 
 
-def detect_dos(sessions, rules, window_seconds=100):
+def detect_dos(sessions, rules, window_seconds=120):
 
     SYN_FLAG_THRESHOLD = rules.get("SYN_FLAG_THRESHOLD", 0)             # vd 1000
     DISTRIBUTED_IP_THRESHOLD = rules.get("DISTRIBUTED_IP_THRESHOLD", 0)  # vd 20
@@ -300,6 +301,7 @@ def detect_dos(sessions, rules, window_seconds=100):
         SLOW_HTTP_MIN_PACKETS=SLOW_HTTP_MIN_PACKETS,
         SLOW_HTTP_PORT=SLOW_HTTP_PORT,
         window_seconds=window_seconds,
+        MIN_DURATION_FOR_RATE=1,
     )
     detect_UDP_Flood(sessions, UDP_PACKET_THRESHOLD, UDP_TOTAL_BYTES_THRESHOLD)
     detect_ICMP_Flood(sessions, ICMP_COUNT_THRESHOLD, ICMP_TOTAL_BYTES_THRESHOLD)

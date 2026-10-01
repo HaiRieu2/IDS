@@ -17,7 +17,7 @@ from ids.alert.alert import (
 WINDOW = 120
 
 def detect_SYN_Flood(sessions, SYN_FLAG_THRESHOLD):
-    syn_by_ip = []
+    syn_by_ip = {}
 
     for session in sessions:
         network = session.get("network", {})

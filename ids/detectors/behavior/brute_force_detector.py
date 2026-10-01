@@ -43,17 +43,13 @@ def detect_brute_force(sessions, rules, window_seconds=120):
         if count > MAX_FAILED_LOGINS:
             evidence = f"IP {src_ip} co {count} lan dang nhap that bai (nguong cho phep: {MAX_FAILED_LOGINS})"
             alert_detect_brute_force(src_ip, evidence)
-
-    # 2. Toc do dang nhap that bai toan cuc (so lan / giay)
-    if window_seconds > 0:
-        failed_login_rate = login_failed_count / window_seconds
-
-        if failed_login_rate > BRUTE_FORCE_REQUEST_RATE_THRESHOLD:
-            evidence = (
-                f"Toc do dang nhap that bai toan cuc = {failed_login_rate:.2f} "
-                f"lan/giay (nguong: {BRUTE_FORCE_REQUEST_RATE_THRESHOLD})"
-            )
-
-            alert_detect_brute_force("MULTIPLE_IP", evidence)
+        if window_seconds > 0:
+            failed_login_rate = count / window_seconds
+            if failed_login_rate > BRUTE_FORCE_REQUEST_RATE_THRESHOLD:
+                evidence = (
+                    f"IP {src_ip} co toc do dang nhap that bai toan cuc = {failed_login_rate:.2f} "
+                    f"lan/giay (nguong: {BRUTE_FORCE_REQUEST_RATE_THRESHOLD})"
+                )
+                alert_detect_brute_force(src_ip, evidence) 
 
     return

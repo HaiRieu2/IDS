@@ -30,8 +30,6 @@ def detect_sqli(session, rules):
     if not transactions:
         return
     for transaction in transactions:
-        request = transaction.get("request", {})
-        response = transaction.get("response", {})
 
         uri = (transaction.get("request") or {}).get("uri", "") or ""
         body = (transaction.get("request") or {}).get("body", "") or ""

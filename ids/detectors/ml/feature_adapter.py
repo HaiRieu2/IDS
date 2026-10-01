@@ -1,6 +1,6 @@
 def feature_extractor(session): #chỉ truyền vào session 2FIN/RST/timeout
     timestamp = session.get("timestamp",{})
-    netwwork = session.get("network",{})
+    network = session.get("network",{})
     flag = session.get("flag",{})
     packets = session.get("packets",{})
     forward = packets.get("forward",{})

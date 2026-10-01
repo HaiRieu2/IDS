@@ -22,27 +22,46 @@ def normalize_payload(payload):
 
 def detect_sqli(session, rules):
     http = session.get("http")
+
+    print("[SQLI] http =", http)
+
     if not http or not http.get("is_http"):
+        print("[SQLI] Not HTTP")
         return
-    SQLI_PATTERNS = rules.get("SQLI_PATTERNS", [])
 
     transactions = http.get("transactions", [])
+
+    print("[SQLI] transactions =", transactions)
+
     if not transactions:
+        print("[SQLI] No transaction")
         return
+
+    # Kiểm tra từng transaction
     for transaction in transactions:
 
-        uri = (transaction.get("request") or {}).get("uri", "") or ""
-        body = (transaction.get("request") or {}).get("body", "") or ""
+        request = transaction.get("request") or {}
 
+        uri = request.get("uri", "")
+        body = request.get("body", "")
 
-        # Chuẩn hóa payload từ URI và body
-        payload = normalize_payload(uri + " " + request.get("body", ""))
+        print("[SQLI] URI =", uri)
+        print("[SQLI] BODY =", body)
 
-        for pattern in SQLI_PATTERNS:
+        payload = normalize_payload(uri + " " + body)
+
+        print("[SQLI] NORMALIZED =", payload)
+
+        for pattern in rules.get("SQLI_PATTERNS", []):
+            print("[SQLI] TEST =", pattern)
+
             if re.search(pattern, payload, re.IGNORECASE):
+                print("[SQLI] MATCH !!!")
+
                 network = session.get("network", {})
                 src_ip = network.get("src_ip", "")
-                alert_detect_sqli(src_ip, payload)
-                return
-    return
 
+                alert_detect_sqli(src_ip, payload)
+
+                # Đã phát hiện SQLi trong transaction này
+                return

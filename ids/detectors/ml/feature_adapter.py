@@ -4,7 +4,7 @@ def feature_extractor(session): #chỉ truyền vào session 2FIN/RST/timeout
     flag = session.get("flag",{})
     packets = session.get("packets",{})
     forward = packets.get("forward",{})
-    backward = session.get("backward",{})
+    backward = packets.get("backward",{})
     flow = session.get("flow",{})
     packet_length = flow.get("packet_length",{})
     iat = flow.get("iat",{})
@@ -32,8 +32,8 @@ def feature_extractor(session): #chỉ truyền vào session 2FIN/RST/timeout
     rst_flag_count= flag.get("rst",0)
     psh_flag_count= flag.get("psh",0)
     ack_flag_count= flag.get("ack",0)
-    Init_Win_bytes_forward= flow.get("init_win_bytes_forward",0)
-    Init_Win_bytes_backward= flow.get("init_win_bytes_backward",0)
+    init_win_bytes_forward= flow.get("init_win_bytes_forward",0)
+    init_win_bytes_backward= flow.get("init_win_bytes_backward",0)
     #====================================================================
     features = [
         dst_port,

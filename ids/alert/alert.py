@@ -14,7 +14,7 @@ ALERT_FILE = LOGS_DIR / "alerts.json"
 # 1 cua so session (recent_sessions) MOI LAN co session moi dong, 1 cuoc
 # tan cong keo dai vai chuc giay se sinh ra hang chuc alert trung lap neu
 # khong co co che nay.
-ALERT_COOLDOWN_SECONDS = 60
+ALERT_COOLDOWN_SECONDS = 120
 
 _alert_lock = threading.Lock()
 _last_alert_time = {}  # (dedup_key, src_ip) : 1s -> timestamp lan canh bao gan nhat

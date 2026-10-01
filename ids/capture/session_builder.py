@@ -10,7 +10,7 @@ class SessionBuilder:
 
     # Gioi han so transaction giu lai moi session (chong phinh bo nho
     # voi cac ket noi keep-alive dai)
-    MAX_TRANSACTIONS = 100
+    MAX_TRANSACTIONS = 1000
 
     def __init__(self, session_timeout=120, max_session_duration=120):
 
@@ -204,7 +204,7 @@ class SessionBuilder:
             session["_fin_seen"].add(direction)
 
             # Hoan tat khi ca 2 chieu deu gui FIN
-            if len(session["_fin_seen"]) >= 2:
+            if len(session["_fin_seen"]) >= 2: #Vi du >= 4 di
                 session["_closed"] = True
                 session["connection"]["_state"] = "closed"
 

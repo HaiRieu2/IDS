@@ -10,6 +10,7 @@ def ml_engine(session):
     X = np.array([features])
     prediction = model.predict(X)
     result = prediction[0]
+    print("[ML] Prediction result:", result)
     if result != "BENIGN":
         network = session.get("network",{})
         src_ip = network.get("src_ip",{})

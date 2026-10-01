@@ -26,7 +26,11 @@ ml
         "psh": 8,
         "ack_count": 18
     },
-
+    "icmp": {
+                "type": packet.get("icmp_type"),
+                "code": packet.get("icmp_code"),
+                "count": 0,
+    },
     "packets": {
         "total": 28,
 
@@ -86,7 +90,7 @@ ml
                             "status_code": 0,
                             "content_length": 0
                         }
-                    }
+                    },
                 ]
             
         
@@ -100,27 +104,13 @@ ml
     }
 }
 
-{
-  "alert_id": "ALT-000001",
-  "timestamp": "time.time()",           
-
-  "attack_type": "Brute Force",
-  "severity": "HIGH",
-
-  "source_ip": "192.168.1.10",
-  "destination_ip": "192.168.1.20",
-
-  "detection_method": "Behavior",
-  "rule_id": "BF-001",
-  "confidence": 0.94,
-
-  "evidence": {
-    "request_count": 120,
-    "time_window": 60,
-    "failed_login_count": 118
-  },
-
-  "description": "Phát hiện số lượng đăng nhập thất bại bất thường trong 60 giây.",
-
-  "action": "ALERT"
+alert = {
+        "alert_id": get_alert_id(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "src_ip": src_ip,
+        "attack_type": attack_type,
+        "engine": engine,
+        "severity": severity,
+        "evidence": evidence,
 }
+

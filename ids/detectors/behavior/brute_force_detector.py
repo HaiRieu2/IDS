@@ -9,7 +9,7 @@ def detect_brute_force(sessions, rules, window_seconds=120):
 
 
     MAX_FAILED_LOGINS = rules.get("MAX_FAILED_LOGINS", 0)
-    BRUTE_FORCE_REQUEST_RATE_THRESHOLD = rules.get("REQUEST_RATE_THRESHOLD", 0)
+    BRUTE_FORCE_REQUEST_RATE_THRESHOLD = rules.get("BRUTE_FORCE_REQUEST_RATE_THRESHOLD", 0)
 
     login_failed_count = 0
     failed_logins = {}  # src_ip -> so lan dang nhap that bai

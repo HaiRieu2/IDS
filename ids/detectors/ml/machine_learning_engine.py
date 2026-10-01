@@ -1,5 +1,8 @@
 from ids.alert.alert import alert_machine_learning
-from feature_adapter import feature_extractor
+from .feature_adapter import feature_extractor
+from config.path import MACHINE_LEARNING_DIR
+import joblib
+import numpy as np
 MODEL_PATH = MACHINE_LEARNING_DIR/("rf_model.pkl")
 model = joblib.load(MODEL_PATH)
 def ml_engine(session):
@@ -9,8 +12,8 @@ def ml_engine(session):
     result = prediction[0]
     if result != "BENIGN":
         network = session.get("network",{})
-        ip_src = network.get("ip_src",{})
-        alert_machine_learning(ip_src,result)
+        src_ip = network.get("src_ip",{})
+        alert_machine_learning(src_ip,result)
     return
 
 

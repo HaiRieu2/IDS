@@ -42,21 +42,21 @@ def detect_UDP_Flood(sessions,UDP_COUNT_THRESHOLD,UDP_TOTAL_BYTES_THRESHOLD):
     udp_by_ip = {}
     for session in sessions:
         network = session.get("network",{})
-        if (network.get("protocol" != "UDP")):
-            continue
-        src_ip = network.get("src_ip","")
-        if src_ip not in udp_by_ip:
-            udp_by_ip[src_ip] = {
-                "counts": 0,
-                "total_bytes": 0
-            }
+        if (network.get("protocol" == "UDP")):
+            src_ip = network.get("src_ip","")
+            if src_ip not in udp_by_ip:
+                udp_by_ip[src_ip] = {
+                    "counts": 0,
+                    "total_bytes": 0
+                }
 
-        packets = session.get("packets",{})
-        forward = packets.get("forward",{})
-        forward_bytes = forward.get("bytes",0)
-        udp_src_ip[src_ip]["counts"] += 1
-        udp_src_ip[src_ip]["total_bytes"] += forward_bytes
-    for src_ip,data in udp_by_ip.item():
+            packets = session.get("packets",{})
+            forward = packets.get("forward",{})
+            forward_bytes = forward.get("bytes",0)
+            udp_src_ip[src_ip]["counts"] += 1
+            udp_src_ip[src_ip]["total_bytes"] += forward_bytes
+
+    for src_ip,data in udp_by_ip.items():
         counts = data["count"]
         total_bytes = data["total_bytes"]
         if counts > UDP_COUNT_THRESHOLD or total_bytes > UDP_TOTAL_BYTES_THRESHOLD:
@@ -84,7 +84,7 @@ def detect_ICMP_Flood(sessions, ICMP_COUNT_THRESHOLD, ICMP_TOTAL_BYTES_THRESHOLD
         icmp_by_ip[src_ip]["counts"] += icmp_count
         icmp_by_ip[src_ip]["total_bytes"] += forward_bytes
 
-    for src_ip,data in icmp_by_ip.item():
+    for src_ip,data in icmp_by_ip.items():
         counts=data["counts"]
         total_bytes=data["total_bytes"]
         if count > ICMP_COUNT_THRESHOLD:
@@ -164,18 +164,6 @@ def detect_HTTP_Flood(
             request_rate = request_count/duration
 
 
-        
-        if src_ip not in http_flood_by_ip:
-            http_flood_by_ip[src_ip]={
-                "request_count": 0,
-                "request_rate": 0
-            }
-
-
-            http_flood_by_ip[src_ip]["request_count"] += request_count
-            temp = http_flood_by_ip[src_ip]["request_rate"]
-            http_flood_by_ip[src_ip]["request_rate"] = ( (temp+request_rate ) / 2)
-
         if src_ip not in http_slow_by_ip:
             http_slow_by_ip[src_ip]={
                 "request_count": 0,
@@ -183,20 +171,33 @@ def detect_HTTP_Flood(
                 "fwd_packets": 0,
                 "total_duration": 0
             }
-            http_slow_by_ip[src_ip]["request_count"] += request_count
-            temp = http_slow_by_ip[src_ip]["request_rate"]
-            http_slow_by_ip[src_ip]["request_rate"] = ( (temp+request_rate ) / 2)
+        http_slow_by_ip[src_ip]["request_count"] += request_count
+        temp = http_slow_by_ip[src_ip]["request_rate"]
+        http_slow_by_ip[src_ip]["request_rate"] = ( (temp+request_rate ) / 2)
             
-            packets = session.get("packets",{})
-            forward = packets.get("forward",{})
-            fwd_packets = forward.get("count",0)
+        packets = session.get("packets",{})
+        forward = packets.get("forward",{})
+        fwd_packets = forward.get("count",0)
 
 
             
-            http_slow_by_ip[src_ip]["fwd_packets"] = fwd_packets
-            http_slow_by_ip[src_ip]["total_duration"] += duration
-
-    for src_ip,data in http_slow_by_ip.item():
+        http_slow_by_ip[src_ip]["fwd_packets"] = fwd_packets
+        http_slow_by_ip[src_ip]["total_duration"] += duration
+        
+        if src_ip not in http_flood_by_ip:
+            http_flood_by_ip[src_ip]={
+                "request_count": 0,
+                "request_rate": 0
+            }
+        
+        
+        http_flood_by_ip[src_ip]["request_count"] += request_count
+        request_count = http_flood_by_ip[src_ip]["request_count"]
+        total_duration =  http_slow_by_ip[src_ip]["total_duration"]
+        if total_duration > 0:
+            http_flood_by_ip[src_ip]["request_rate"] = ( request_count / total_duration )
+        
+    for src_ip,data in http_slow_by_ip.items():
         request_count = http_slow_by_ip[src_ip]["request_count"]
         request_rate = http_slow_by_ip[src_ip]["request_rate"]
         fwd_packets = http_slow_by_ip[src_ip]["fwd_packets"]
@@ -210,7 +211,7 @@ def detect_HTTP_Flood(
             alert_detect_HTTP_Flood(src_ip,evidence)
 
 
-    for src_ip,data in http_flood_by_ip.item():
+    for src_ip,data in http_flood_by_ip.items():
         request_count=data["request_count"]
         request_rate=data["request_rate"]
         if request_count > HTTP_FLOOD_REQUEST_THRESHOLD and request_rate > HTTP_FLOOD_REQUEST_RATE:

@@ -7,7 +7,7 @@ from ids.capture.live_capture import LiveCapture
 from ids.capture.session_builder import SessionBuilder
 from ids.detectors.signature.signature_engine import signature_engine
 from ids.detectors.behavior.behavior_engine import behavior_engine
-
+from ids.detectors.ml.machine_learning_engine import ml_engine
 def worker_xu_ly(capture):
     print('[+] Goi Ham worker_xu_ly thanh cong')
     RULE_FILE = CONFIG_DATA/"rules.json"
@@ -49,7 +49,7 @@ def main():
     )
 
     parser.add_argument(
-        "-t", "--timeout", type=int, default=60,
+        "-t", "--timeout", type=int, default=120,
         help="Session timeout (seconds) of inactivity before a "
              "flow is considered a new session"
     )

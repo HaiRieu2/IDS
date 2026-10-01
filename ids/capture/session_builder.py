@@ -113,8 +113,8 @@ class SessionBuilder:
 
                 #forward: lay o goi dau tien
                 #backward:lay o goi cuoi
-                "init_win_bytes_forward": 0.0,
-                "init_win_bytes_backward": 0.0,
+                "init_win_bytes_forward": None,
+                "init_win_bytes_backward": None,
 
                 "packet_length": {
                     "min": 0.0,

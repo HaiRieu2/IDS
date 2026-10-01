@@ -28,17 +28,17 @@ def detect_xss(session, rules):
     transactions = http.get("transactions", [])
     if not transactions:
         return
-    transaction = transactions[-1]
+    for transaction in transactions:
 
-    uri = (transaction.get("request") or {}).get("uri", "") or ""
-    body = (transaction.get("request") or {}).get("body", "") or ""
+        uri = (transaction.get("request") or {}).get("uri", "") or ""
+        body = (transaction.get("request") or {}).get("body", "") or ""
 
-    payload = normalize_payload(uri + " " + body)   # <-- gọi hàm normalize đã định nghĩa
+        payload = normalize_payload(uri + " " + body)   # <-- gọi hàm normalize đã định nghĩa
 
-    for pattern in XSS_PATTERNS:
-        if re.search(pattern, payload, re.IGNORECASE):
-            network = session.get("network", {})
-            src_ip = network.get("src_ip", "")
-            alert_detect_xss(src_ip, payload)
-            return
+        for pattern in XSS_PATTERNS:
+            if re.search(pattern, payload, re.IGNORECASE):
+                network = session.get("network", {})
+                src_ip = network.get("src_ip", "")
+                alert_detect_xss(src_ip, payload)
+                return
     return

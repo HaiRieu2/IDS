@@ -204,7 +204,7 @@ class SessionBuilder:
             session["_fin_seen"].add(direction)
 
             # Hoan tat khi ca 2 chieu deu gui FIN
-            if len(session["_fin_seen"]) >= 2: #Vi du >= 4 di
+            if len(session["_fin_seen"]) >= 2: 
                 session["_closed"] = True
                 session["connection"]["_state"] = "closed"
 

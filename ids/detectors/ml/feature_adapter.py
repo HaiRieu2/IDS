@@ -10,7 +10,7 @@ def feature_extractor(session): #chỉ truyền vào session 2FIN/RST/timeout
     iat = flow.get("iat",{})
     #=====================================================================
     dst_port= network.get("dst_port",0)
-    flow_duration= timestamp.get("duration",0)
+    flow_duration= (timestamp.get("duration",0) * 1000000)  # convert to microseconds
     total_fwd_packets= forward.get("count",0)
     total_backward_packets= backward.get("count",0)
     total_length_of_fwd_packets= forward.get("bytes",0)

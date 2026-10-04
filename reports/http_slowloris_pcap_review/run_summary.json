@@ -1,0 +1,31 @@
+{
+  "pcap_packets": 8000,
+  "duration_seconds": 387.5830369,
+  "ids_flow_segments": 2000,
+  "ids_callback_segments": 2000,
+  "ids_distinct_5tuples": 500,
+  "cicflowmeter_python_segments": 1500,
+  "cicflowmeter_python_distinct_5tuples": 500,
+  "matched_distinct_5tuples": 500,
+  "ids_only_5tuples": 0,
+  "cfm_python_only_5tuples": 0,
+  "ids_packets_in_segments": 8000,
+  "cfm_python_packets_in_segments": 9500,
+  "ids_backward_packets": 3500,
+  "model_predictions": {
+    "DoS slowloris": 1000,
+    "BENIGN": 1000
+  },
+  "ml_eligible_non_singleton_flows": 1500,
+  "single_packet_flows_skipped_by_ml": 500,
+  "ml_raw_predictions_eligible": {
+    "DoS slowloris": 1000,
+    "BENIGN": 500
+  },
+  "ml_results_after_current_threshold": {
+    "DoS slowloris": 1000,
+    "DoS Hulk": 284,
+    "BENIGN": 216
+  },
+  "ml_alert_threshold": 0.1
+}

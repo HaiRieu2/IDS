@@ -1,7 +1,6 @@
 import os
 import sqlite3
 
-import requests
 from flask import (
     Flask, render_template, request, redirect,
     url_for, session, g, jsonify
@@ -147,4 +146,12 @@ def logout():
 if __name__ == "__main__":
     if not os.path.exists(DB_PATH):
         print("[!] Chua tim thay database")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # Separate the vulnerable victim from the IDS dashboard (port 5000).
+    # Threaded HTTP/1.1 serving lets a client reuse one TCP connection for
+    # multiple request/response exchanges during keep-alive traffic tests.
+    app.run(
+        host=os.environ.get("IDS_WEB_HOST", "0.0.0.0"),
+        port=int(os.environ.get("IDS_WEB_PORT", "8080")),
+        debug=False,
+        threaded=True,
+    )

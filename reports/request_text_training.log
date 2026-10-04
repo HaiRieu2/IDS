@@ -1,0 +1,31 @@
+Reading dataset: F:\IDS\data\xss_sqli\xss_sqli_http_requests.csv
+Loaded 17,000 rows. Preparing stratified 80/20 split.
+Training holdout model (80% of rows)...
+Rows loaded: 17,000
+Label counts:
+label
+BENIGN    7000
+SQLi      5000
+XSS       5000
+
+Stratified random holdout report (20%):
+              precision    recall  f1-score   support
+
+      BENIGN       1.00      1.00      1.00      1400
+        SQLi       1.00      1.00      1.00      1000
+         XSS       1.00      1.00      1.00      1000
+
+    accuracy                           1.00      3400
+   macro avg       1.00      1.00      1.00      3400
+weighted avg       1.00      1.00      1.00      3400
+
+Confusion matrix (BENIGN, SQLi, XSS):
+[[1400    0    0]
+ [   0 1000    0]
+ [   0    0 1000]]
+Training final model on all rows...
+Saving model atomically to F:\IDS\ml\request_text_model.joblib...
+
+Saved request-text model: F:\IDS\ml\request_text_model.joblib
+Model classes: ['BENIGN', 'SQLi', 'XSS']
+Training log saved: F:\IDS\reports\request_text_training.log

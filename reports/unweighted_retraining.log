@@ -1,0 +1,115 @@
+Đang đọc: F:\IDS\data\cicids2017\Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv
+  Số flow sau chuẩn hóa: 170366
+Label
+BENIGN                      168186
+Web Attack - Brute Force      1507
+XSS                            652
+Sqli                            21
+Đang đọc: F:\IDS\data\cicids2017\Wednesday-workingHours.pcap_ISCX.csv
+  Số flow sau chuẩn hóa: 692692
+Label
+BENIGN              440031
+DoS Hulk            231073
+DoS GoldenEye        10293
+DoS slowloris         5796
+DoS Slowhttptest      5499
+Đang đọc: F:\IDS\data\cicids2018\Thursday-22-02-2018_TrafficForML_CICFlowMeter.csv
+  Số flow sau chuẩn hóa: 1048575
+Label
+BENIGN                      1048213
+Web Attack - Brute Force        249
+XSS                              79
+Sqli                             34
+
+Stratified holdout evaluation
+Raw argmax classification report:
+                          precision    recall  f1-score   support
+
+                  BENIGN       1.00      1.00      1.00    414108
+           DoS GoldenEye       1.00      0.99      1.00      2573
+                DoS Hulk       1.00      1.00      1.00     57768
+        DoS Slowhttptest       0.99      0.99      0.99      1375
+           DoS slowloris       0.99      1.00      0.99      1449
+                    Sqli       0.60      0.21      0.32        14
+Web Attack - Brute Force       0.75      0.84      0.79       439
+                     XSS       0.61      0.31      0.41       183
+
+                accuracy                           1.00    477909
+               macro avg       0.87      0.79      0.81    477909
+            weighted avg       1.00      1.00      1.00    477909
+
+Confusion matrix labels: ['BENIGN', 'DoS GoldenEye', 'DoS Hulk', 'DoS Slowhttptest', 'DoS slowloris', 'Sqli', 'Web Attack - Brute Force', 'XSS']
+[[414036      0     63      3      6      0      0      0]
+ [     8   2555      7      3      0      0      0      0]
+ [    31      3  57734      0      0      0      0      0]
+ [     6      1      0   1364      3      0      1      0]
+ [     4      0      0      2   1443      0      0      0]
+ [     6      0      0      0      0      3      5      0]
+ [    34      0      0      0      0      2    367     36]
+ [    10      0      0      0      0      0    116     57]]
+
+Live IDS prediction report (BENIGN backstop threshold=0.15):
+                          precision    recall  f1-score   support
+
+                  BENIGN       1.00      1.00      1.00    414108
+           DoS GoldenEye       0.99      1.00      0.99      2573
+                DoS Hulk       1.00      1.00      1.00     57768
+        DoS Slowhttptest       0.96      0.99      0.98      1375
+           DoS slowloris       0.98      1.00      0.99      1449
+                    Sqli       0.60      0.21      0.32        14
+Web Attack - Brute Force       0.73      0.90      0.80       439
+                     XSS       0.56      0.34      0.42       183
+
+                accuracy                           1.00    477909
+               macro avg       0.85      0.80      0.81    477909
+            weighted avg       1.00      1.00      1.00    477909
+
+Binary attack detection: recall=0.9997 (63784/63801), benign false-positive rate=0.0008 (319/414108)
+
+Cross-source stress test: train only on CIC-IDS-2017, evaluate CIC-IDS-2018 (the final IDS model is trained on all configured sources)
+Raw argmax classification report:
+                          precision    recall  f1-score   support
+
+                  BENIGN       1.00      0.89      0.94   1048213
+           DoS GoldenEye       0.00      0.00      0.00         0
+                DoS Hulk       0.00      0.00      0.00         0
+        DoS Slowhttptest       0.00      0.00      0.00         0
+           DoS slowloris       0.00      0.00      0.00         0
+                    Sqli       0.00      0.00      0.00        34
+Web Attack - Brute Force       1.00      0.00      0.01       249
+                     XSS       0.64      0.09      0.16        79
+
+                accuracy                           0.89   1048575
+               macro avg       0.33      0.12      0.14   1048575
+            weighted avg       1.00      0.89      0.94   1048575
+
+Confusion matrix labels: ['BENIGN', 'DoS GoldenEye', 'DoS Hulk', 'DoS Slowhttptest', 'DoS slowloris', 'Sqli', 'Web Attack - Brute Force', 'XSS']
+[[934339  76203  37468     23    180      0      0      0]
+ [     0      0      0      0      0      0      0      0]
+ [     0      0      0      0      0      0      0      0]
+ [     0      0      0      0      0      0      0      0]
+ [     0      0      0      0      0      0      0      0]
+ [    33      1      0      0      0      0      0      0]
+ [   237      0      7      0      0      0      1      4]
+ [    72      0      0      0      0      0      0      7]]
+
+Live IDS prediction report (BENIGN backstop threshold=0.15):
+                          precision    recall  f1-score   support
+
+                  BENIGN       1.00      0.86      0.93   1048213
+           DoS GoldenEye       0.00      0.00      0.00         0
+                DoS Hulk       0.00      0.00      0.00         0
+        DoS Slowhttptest       0.00      0.00      0.00         0
+           DoS slowloris       0.00      0.00      0.00         0
+                    Sqli       1.00      0.21      0.34        34
+Web Attack - Brute Force       0.25      0.27      0.26       249
+                     XSS       0.39      0.48      0.43        79
+
+                accuracy                           0.86   1048575
+               macro avg       0.33      0.23      0.24   1048575
+            weighted avg       1.00      0.86      0.93   1048575
+
+Binary attack detection: recall=0.6989 (253/362), benign false-positive rate=0.1364 (143024/1048213)
+
+Final model (fit on all 1,911,633 flows) saved: F:\IDS\ml\rf_model.pkl
+Final classes: ['BENIGN', 'DoS GoldenEye', 'DoS Hulk', 'DoS Slowhttptest', 'DoS slowloris', 'Sqli', 'Web Attack - Brute Force', 'XSS']

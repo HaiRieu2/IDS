@@ -1,0 +1,17 @@
+{
+  "threshold": 0.15,
+  "flows_total": 2000,
+  "flows_ml_eligible": 1500,
+  "single_packet_skipped": 500,
+  "raw_predictions": {
+    "DoS slowloris": 1000,
+    "BENIGN": 500
+  },
+  "alert_results": {
+    "DoS slowloris": 1000,
+    "BENIGN": 500
+  },
+  "alerts": 1000,
+  "benign_without_ml_alert": 500,
+  "benign_promoted_by_threshold": 0
+}

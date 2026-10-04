@@ -5,6 +5,8 @@ import os
 import json
 import time
 import threading
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 ALERT_COUNTER_FILE = CONFIG_DATA / "alert_counter.txt"
 ALERT_FILE = LOGS_DIR / "alerts.json"
@@ -18,6 +20,20 @@ ALERT_COOLDOWN_SECONDS = 120
 
 _alert_lock = threading.Lock()
 _last_alert_time = {}  # (dedup_key, src_ip) : 1s -> timestamp lan canh bao gan nhat
+_alert_output_override = ContextVar("ids_alert_output", default=None)
+_cooldown_override = ContextVar("ids_alert_cooldown", default=None)
+
+
+@contextmanager
+def isolated_alert_output(path):
+    """Route alerts from one offline PCAP to its own JSONL and cooldown map."""
+    output_token = _alert_output_override.set(path)
+    cooldown_token = _cooldown_override.set({})
+    try:
+        yield
+    finally:
+        _cooldown_override.reset(cooldown_token)
+        _alert_output_override.reset(output_token)
 
 
 def _is_in_cooldown(dedup_key, src_ip):
@@ -29,10 +45,12 @@ def _is_in_cooldown(dedup_key, src_ip):
     key = (dedup_key, src_ip) #(DoS,192.168.1.1) 
 
     with _alert_lock:
-        last_time = _last_alert_time.get(key, 0)
+        cooldowns = _cooldown_override.get()
+        table = cooldowns if cooldowns is not None else _last_alert_time
+        last_time = table.get(key, 0)
         if now - last_time < ALERT_COOLDOWN_SECONDS:
             return True
-        _last_alert_time[key] = now
+        table[key] = now
         return False
 
 
@@ -62,8 +80,10 @@ def get_alert_id():
 
 
 def save_alert_to_file(alert_data):
+    output_path = _alert_output_override.get() or ALERT_FILE
+    os.makedirs(os.path.dirname(os.fspath(output_path)), exist_ok=True)
     with _alert_lock:
-        with open(ALERT_FILE, "a", encoding="utf-8") as f:
+        with open(output_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(alert_data, ensure_ascii=False) + "\n")
     return
 
@@ -156,8 +176,9 @@ def alert_detect_sqli(src_ip, payload):
     )
 
 
-def alert_machine_learning(src_ip,attack_type):
+def alert_machine_learning(src_ip, attack_type, confidence=None):
+    evidence = attack_type if confidence is None else f"{attack_type} (model confidence={confidence:.3f})"
     return _make_and_save_alert(
-        src_ip, attack_type, "machine learning", "high",attack_type,
+        src_ip, attack_type, "machine learning", "high", evidence,
         dedup_key=f"ml_{attack_type}",
     )

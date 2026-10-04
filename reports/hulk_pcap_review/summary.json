@@ -1,0 +1,34 @@
+{
+  "pcap": "C:\\Users\\GIGABYTE\\Desktop\\DoS-Hulk_attack.pcap",
+  "file_size_bytes": 104133664,
+  "packets_read": 241991,
+  "flow_segments": 56994,
+  "distinct_5tuples": 28231,
+  "packets_accounted_in_flows": 241991,
+  "ml_eligible_flows": 52570,
+  "skipped_single_packet_flows": 4424,
+  "ml_alert_threshold": 0.15,
+  "raw_prediction_counts": {
+    "SKIPPED_SINGLE_PACKET": 4424,
+    "BENIGN": 52564,
+    "DoS Slowhttptest": 6
+  },
+  "alert_result_counts": {
+    "SKIPPED_SINGLE_PACKET": 4424,
+    "DoS GoldenEye": 7453,
+    "BENIGN": 39778,
+    "DoS Slowhttptest": 5338,
+    "DoS Hulk": 1
+  },
+  "ml_alert_count": 12792,
+  "model_classes": [
+    "BENIGN",
+    "DoS GoldenEye",
+    "DoS Hulk",
+    "DoS Slowhttptest",
+    "DoS slowloris",
+    "Sqli",
+    "Web Attack - Brute Force",
+    "XSS"
+  ]
+}

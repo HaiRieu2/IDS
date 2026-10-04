@@ -18,6 +18,7 @@ HTTP_RESPONSE_RE = re.compile(r"^HTTP/\d\.\d\s+(\d{3})\s*(.*)$")
 # Lay timestamp
 
 def get_timestamp(packet):
+    """Return the capture timestamp as Unix seconds."""
     if hasattr(packet, "time"):
         return float(packet.time)
 
@@ -26,6 +27,7 @@ def get_timestamp(packet):
 # Lay IP
 
 def get_ip_layer(packet):
+    """Return the IPv4 or IPv6 layer, if present."""
     if IP in packet:
         return packet[IP]
 
@@ -37,6 +39,7 @@ def get_ip_layer(packet):
 # Lay giao thuc
 
 def get_protocol(packet):
+    """Map Scapy transport/network layers to the IDS protocol name."""
     if TCP in packet:
         return "TCP"
 
@@ -54,6 +57,7 @@ def get_protocol(packet):
 # HTTP Request
 
 def extract_http_request(payload):
+    """Parse one HTTP request message into the common transaction schema."""
     """
     GET /login?id=1 HTTP/1.1
     Host: 192.168.10.20
@@ -179,6 +183,7 @@ def extract_http_request(payload):
 # HTTP Response
 
 def extract_http_response(payload):
+    """Parse one HTTP response message into the common transaction schema."""
 
     """
     HTTP/1.1 200 OK
@@ -249,6 +254,7 @@ def extract_http_response(payload):
     return result
 
 def extract_http(payload):
+    """Identify and parse an HTTP request or response payload."""
 
     request = extract_http_request(payload)
     if request["is_http"]:
@@ -276,6 +282,7 @@ def _parse_headers(lines):
     return headers
 
 def parse_packet(packet):
+    """Normalize a Scapy packet into the dictionary consumed by SessionBuilder."""
 
     ip_layer = get_ip_layer(packet)
     if ip_layer is None:
@@ -287,10 +294,16 @@ def parse_packet(packet):
 
     timestamp = get_timestamp(packet)
 
-    packet_length = len(packet)
+    # CICFlowMeter counts the network packet, excluding Ethernet framing.
+    packet_length = len(ip_layer)
 
     result = {
         "timestamp": timestamp,
+        # CICFlowMeter's PacketReader uses timestampInMicros(). Keep the
+        # integer microsecond value alongside seconds (used by session expiry
+        # and wall-clock displays) so feature calculations do not inherit
+        # floating-point epoch timestamp noise.
+        "cic_timestamp_us": int(round(timestamp * 1_000_000)),
 
         "src_ip": ip_layer.src,
         "dst_ip": ip_layer.dst,
@@ -301,10 +314,15 @@ def parse_packet(packet):
         "protocol": protocol,
 
         "packet_length": packet_length,
+        # CICFlowMeter's packet/flow byte features are based on the transport
+        # payload length (TCP/UDP), not the complete IP packet length above.
+        "payload_length": 0,
+        "transport_header_length": 0,
 
         "tcp_flags": "",
 
         "window": 0, # Truong trong SYN
+        "tcp_seq": None,
 
         "syn": 0,
         "syn_ack": 0,
@@ -312,6 +330,9 @@ def parse_packet(packet):
         "fin": 0,
         "rst": 0,
         "psh": 0,
+        "urg": 0,
+        "cwr": 0,
+        "ece": 0,
 
         "payload": b"",
 
@@ -332,6 +353,10 @@ def parse_packet(packet):
         result["tcp_flags"] = str(flags)
 
         result["window"] = int(tcp.window)
+        result["payload_length"] = len(bytes(tcp.payload))
+        result["transport_header_length"] = int(tcp.dataofs or 5) * 4
+        # SYN consumes one sequence number before its payload.
+        result["tcp_seq"] = (int(tcp.seq) + (1 if flags & 0x02 else 0)) & 0xffffffff
 
         # SYN
         if flags & 0x02:
@@ -357,6 +382,15 @@ def parse_packet(packet):
         if flags & 0x08:
             result["psh"] = 1
 
+        if flags & 0x20:
+            result["urg"] = 1
+
+        if flags & 0x80:
+            result["cwr"] = 1
+
+        if flags & 0x40:
+            result["ece"] = 1
+
 
 
     # UDP
@@ -367,6 +401,8 @@ def parse_packet(packet):
 
         result["src_port"] = udp.sport
         result["dst_port"] = udp.dport
+        result["payload_length"] = len(bytes(udp.payload))
+        result["transport_header_length"] = 8
 
     # Raw payload
 

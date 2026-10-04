@@ -1,0 +1,30 @@
+{
+  "pcap": "C:\\Users\\GIGABYTE\\Desktop\\http_slowloris.pcap",
+  "packets": 8000,
+  "flow_segments": 2000,
+  "ml_eligible": 1500,
+  "skipped_single_packet": 500,
+  "threshold": 0.1,
+  "raw_prediction_counts": {
+    "DoS slowloris": 1000,
+    "BENIGN": 500
+  },
+  "alert_result_counts": {
+    "DoS slowloris": 1000,
+    "DoS Hulk": 284,
+    "BENIGN": 216
+  },
+  "alert_count": 1284,
+  "raw_prediction_confidence_by_class": {
+    "BENIGN": {
+      "mean": 0.896675,
+      "min": 0.86875,
+      "max": 0.94375
+    },
+    "DoS slowloris": {
+      "mean": 0.5699999999999998,
+      "min": 0.5,
+      "max": 0.6625
+    }
+  }
+}

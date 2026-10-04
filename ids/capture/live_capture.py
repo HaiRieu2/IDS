@@ -1,10 +1,11 @@
-from scapy.all import sniff, rdpcap
+from scapy.all import AsyncSniffer, PcapReader
 from datetime import datetime, timezone
 import json
 import os
 import time
 import queue
 import threading
+from collections import deque
 from .packet_parser import parse_packet
 from .session_builder import SessionBuilder
 from .ip_reassembly import IPDefragmenter
@@ -15,6 +16,12 @@ from config.path import CONFIG_DATA
 
 
 class LiveCapture:  
+    """Capture packets, turn them into sessions, then emit closed sessions.
+
+    Both Scapy live traffic and offline PCAP traffic use this class. Detection
+    itself is injected through ``on_session`` so the capture layer stays
+    separate from detector implementation.
+    """
 
     def __init__(
         self,
@@ -25,6 +32,9 @@ class LiveCapture:
         output_file= LOGS_DIR/"sessions.json",
         output_session_counter_file= CONFIG_DATA/"session_counter.txt",
         autosave_interval=30,
+        on_session=None,
+        enable_dedup=False,
+        flush_on_stop=True,
 
     ):
         self.packet_queue = queue.Queue()
@@ -43,7 +53,15 @@ class LiveCapture:
         self._ip_defragmenter = IPDefragmenter()
 
         # Loai bo goi tin bi bat trung 
-        self._deduplicator = PacketDeduplicator()
+        self._deduplicator = PacketDeduplicator() if enable_dedup else None
+        self.on_session = on_session
+        self.flush_on_stop = flush_on_stop
+        self.pcap_packets_read = 0
+        self.packet_count = 0
+        self._recent_packet_times = deque()
+        self._traffic_lock = threading.Lock()
+        self._sniffer = None
+        self._stop_requested = threading.Event()
 
         self.output_file = output_file
 
@@ -70,11 +88,12 @@ class LiveCapture:
     # Packet callback
 
     def process_packet(self, packet):
+        """Parse one Scapy packet, update its flow, and emit it if now closed."""
 
         try:
 
-            # Loai goi tin bi bat trung 
-            if self._deduplicator.is_duplicate(bytes(packet)):
+            # 1. Reject an optional duplicate and wait for complete IP fragments.
+            if self._deduplicator and self._deduplicator.is_duplicate(bytes(packet)):
                 return
 
             # Ghep IP fragment. Neu day la 1 fragment ma nhom chua du de
@@ -84,22 +103,38 @@ class LiveCapture:
             if packet is None:
                 return
 
+            # 2. Convert Scapy's layers into the IDS packet dictionary.
             parsed = parse_packet(packet)
 
             if parsed is None:
                 return
 
+            # 3. Update live counters and the bidirectional flow record.
             self._last_packet_time = parsed["timestamp"]
+            now = time.monotonic()
+            with self._traffic_lock:
+                self.packet_count += 1
+                self._recent_packet_times.append(now)
+                while self._recent_packet_times and now - self._recent_packet_times[0] > 1.0:
+                    self._recent_packet_times.popleft()
 
             session = self.session_builder.add_packet(parsed)
 
-            
+            # add_packet may rotate a long-lived flow or replace one that
+            # exceeded the idle timeout. Emit those completed flow snapshots
+            # before analyzing the newly created flow. Without this drain,
+            # the old flow is marked closed internally but never reaches ML.
+            for completed_session in self.session_builder.drain_pending_closed_sessions():
+                self._emit_session(completed_session)
 
             self._log_packet(parsed)
 
+            # 4. Save/expire periodically, then analyze a just-closed session.
             self._maybe_autosave()
             if session["_closed"]:
-                return (self.session_builder.snapshot(session))
+                snapshot = self.session_builder.snapshot(session)
+                self._emit_session(snapshot)
+                return snapshot
 
         except Exception as e:
 
@@ -162,11 +197,14 @@ class LiveCapture:
 
         # Don cac nhom IP fragment qua han chua ghep xong, tranh ro ri bo
         # nho neu bi tan cong bang fragment co y khong gui du.
-        self._ip_defragmenter.cleanup(current_time=self._last_packet_time)
+        current_time = max(time.time(), self._last_packet_time or 0)
+        self._ip_defragmenter.cleanup(current_time=current_time)
 
         expired = self.session_builder.close_expired_sessions(
-            current_time=self._last_packet_time
+            current_time=current_time
         )
+
+        self._emit_sessions(expired)
 
         if expired:
             print(f"[+] Closed {len(expired)} idle session(s).")
@@ -219,27 +257,54 @@ class LiveCapture:
             )
             autosave_thread.start()
 
-            sniff(
-                iface=self.interface,
-                filter=self.bpf_filter,
-                prn=self.put_packet,
-                store=False
-            )
+            if not self._stop_requested.is_set():
+                self._sniffer = AsyncSniffer(
+                    iface=self.interface,
+                    filter=self.bpf_filter,
+                    prn=self.put_packet,
+                    store=False
+                )
+                self._sniffer.start()
+                self._sniffer.join()
 
         except KeyboardInterrupt:
             print("\n[!] Stopped by user.")
 
         finally:
+            self.stop()
             self._running = False
-            self.flush()
+            if self.flush_on_stop:
+                self.flush()
 
     def stop(self):
+        self._stop_requested.set()
         self._running = False
+        sniffer = self._sniffer
+        if sniffer is not None and sniffer.running:
+            try:
+                sniffer.stop()
+            except Exception as exc:
+                print(f"[!] Capture stop: {exc}")
+
+    def traffic_stats(self):
+        now = time.monotonic()
+        with self._traffic_lock:
+            while self._recent_packet_times and now - self._recent_packet_times[0] > 1.0:
+                self._recent_packet_times.popleft()
+            packets_per_second = len(self._recent_packet_times)
+            packet_count = self.packet_count
+        return {
+            "running": self._running,
+            "packets": packet_count,
+            "packets_per_second": packets_per_second,
+            "sessions": self.session_builder.count_sessions(),
+        }
 
     def flush(self):
         """Dong moi session con mo va ghi ra file (goi khi ket thuc capture)."""
 
         closed = self.session_builder.close_all_sessions()
+        self._emit_sessions(closed)
 
         if closed:
             print(f"[+] Closed {len(closed)} open session(s) on shutdown.")
@@ -254,17 +319,44 @@ class LiveCapture:
     # =================================================
 
     def read_pcap(self, pcap_path):
+        """Replay a PCAP through the same parser and session builder as live."""
 
         print(f"[+] Reading pcap file: {pcap_path}")
 
-        packets = rdpcap(pcap_path)
+        # Stream packets one by one. rdpcap() materializes the entire capture
+        # in memory, which is costly for large CIC-IDS attack PCAPs; the
+        # streaming reader still feeds every packet through the exact same
+        # process_packet path used by live capture.
+        self.pcap_packets_read = 0
+        # Scapy treats strings as file paths, but treats arbitrary objects as
+        # already-open file handles. pathlib.Path is not a file handle and
+        # has no .read(), so normalize PathLike inputs before constructing the
+        # reader (the dashboard passes a WindowsPath here).
+        with PcapReader(os.fspath(pcap_path)) as packets:
+            for packet in packets:
+                self.pcap_packets_read += 1
+                self.process_packet(packet)
 
-        for packet in packets:
-            self.process_packet(packet)
+        # PCAP thường kết thúc khi nhiều TCP flow vẫn còn mở. Đóng và phân tích
+        # chúng để offline và live cùng đưa flow hoàn chỉnh qua một pipeline.
+        self._emit_sessions(self.session_builder.close_all_sessions())
 
-        print(f"[+] Done. {len(packets)} packets processed.")
+        print(f"[+] Done. {self.pcap_packets_read} packets processed.")
 
         return self.get_sessions()
+
+    def _emit_session(self, session):
+        if self.on_session:
+            self.on_session(session)
+
+    def _emit_sessions(self, session_ids):
+        if not self.on_session:
+            return
+        by_id = {s["session_id"]: s for s in self.session_builder.get_sessions()}
+        for session_id in session_ids:
+            session = by_id.get(session_id)
+            if session is not None:
+                self._emit_session(session)
 
     # Get sessions
 

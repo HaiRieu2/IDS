@@ -1,0 +1,28 @@
+{
+  "pcap": "C:\\Users\\GIGABYTE\\Desktop\\http_slowloris.pcap",
+  "packets_read": 8000,
+  "flow_segments": 2000,
+  "ml_eligible": 1500,
+  "skipped_single_packet": 500,
+  "features": 67,
+  "threshold": 0.15,
+  "raw_prediction_counts": {
+    "DoS slowloris": 1000,
+    "BENIGN": 500
+  },
+  "alert_result_counts": {
+    "DoS slowloris": 1000,
+    "BENIGN": 500
+  },
+  "ml_alert_count": 1000,
+  "model_classes": [
+    "BENIGN",
+    "DoS GoldenEye",
+    "DoS Hulk",
+    "DoS Slowhttptest",
+    "DoS slowloris",
+    "Sqli",
+    "Web Attack - Brute Force",
+    "XSS"
+  ]
+}

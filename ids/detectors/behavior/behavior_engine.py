@@ -9,6 +9,8 @@ Tra ket qua detection.
 
 import time
 import threading
+from contextvars import ContextVar
+from contextlib import contextmanager
 from .brute_force_detector import detect_brute_force
 from .dos_detector import detect_dos
 
@@ -21,29 +23,43 @@ recent_sessions = {}
 # chay 1 worker thread nen chua can thiet, nhung them san de an toan neu
 # sau nay chay nhieu worker thread song song.
 _lock = threading.Lock()
+_session_store = ContextVar("ids_behavior_sessions", default=None)
 
 # Chi giu session trong TIME_WINDOW giay gan nhat
 TIME_WINDOW = 120
 
 
+@contextmanager
+def isolated_behavior_state():
+    """Keep offline-PCAP behavior windows separate from live capture state."""
+    token = _session_store.set({})
+    try:
+        yield
+    finally:
+        _session_store.reset(token)
+
+
 def behavior_engine(session, rules):
     current_time = time.time()
     session_id = session.get("session_id")
+    store = _session_store.get()
+    if store is None:
+        store = recent_sessions
 
     with _lock:
         # Ghi/cap nhat session - dung dict nen khong can duyet toan bo
         # danh sach nhu ban goc (vua don gian hon vua nhanh hon).
-        recent_sessions[session_id] = {
+        store[session_id] = {
             "time": current_time,
             "session": session,
         }
         
-        remove_old_sessions(current_time)
+        remove_old_sessions(current_time, store)
 
         # Snapshot danh sach session hien tai de dua cho detector, tranh
         # detector doc truc tiep tu dict dung khi dict co the bi thread
         # khac sua doi.
-        sessions_snapshot = get_sessions()
+        sessions_snapshot = get_sessions(store)
 
     # Chay detector NGOAI pham vi lock: cac ham nay co the ghi file alert
     # (I/O), khong nen giu lock trong luc do de tranh chan cac request khac.
@@ -53,23 +69,25 @@ def behavior_engine(session, rules):
     return
 
 
-def remove_old_sessions(current_time):
+def remove_old_sessions(current_time, store=None):
     """
     Xoa session da qua TIME_WINDOW.
     Luu y: ham nay phai duoc goi trong luc dang giu _lock.
     """
 
+    store = store if store is not None else recent_sessions
     stale_ids = [
         session_id
-        for session_id, item in recent_sessions.items()
+        for session_id, item in store.items()
         if current_time - item["time"] > TIME_WINDOW
     ]
 
     for session_id in stale_ids:
-        del recent_sessions[session_id]
+        del store[session_id]
 
 
-def get_sessions():
+def get_sessions(store=None):
     """Tra ve list cac session hien tai. Goi trong luc dang giu _lock."""
 
-    return [item["session"] for item in recent_sessions.values()]
+    store = store if store is not None else recent_sessions
+    return [item["session"] for item in store.values()]

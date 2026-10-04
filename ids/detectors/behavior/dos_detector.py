@@ -42,22 +42,17 @@ def detect_UDP_Flood(sessions,UDP_COUNT_THRESHOLD,UDP_TOTAL_BYTES_THRESHOLD):
     udp_by_ip = {}
     for session in sessions:
         network = session.get("network",{})
-        if (network.get("protocol" == "UDP")):
-            src_ip = network.get("src_ip","")
-            if src_ip not in udp_by_ip:
-                udp_by_ip[src_ip] = {
-                    "counts": 0,
-                    "total_bytes": 0
-                }
-
-            packets = session.get("packets",{})
-            forward = packets.get("forward",{})
-            forward_bytes = forward.get("bytes",0)
-            udp_src_ip[src_ip]["counts"] += 1
-            udp_src_ip[src_ip]["total_bytes"] += forward_bytes
+        if network.get("protocol") != "UDP":
+            continue
+        src_ip = network.get("src_ip", "")
+        item = udp_by_ip.setdefault(src_ip, {"counts": 0, "total_bytes": 0})
+        packets = session.get("packets", {})
+        forward = packets.get("forward", {})
+        item["counts"] += forward.get("count", 0)
+        item["total_bytes"] += forward.get("bytes", 0)
 
     for src_ip,data in udp_by_ip.items():
-        counts = data["count"]
+        counts = data["counts"]
         total_bytes = data["total_bytes"]
         if counts > UDP_COUNT_THRESHOLD or total_bytes > UDP_TOTAL_BYTES_THRESHOLD:
             evidence = f"UDP Count = {counts} and Total Bytes = {total_bytes}"
@@ -68,7 +63,7 @@ def detect_ICMP_Flood(sessions, ICMP_COUNT_THRESHOLD, ICMP_TOTAL_BYTES_THRESHOLD
     icmp_by_ip = {}
     for session in sessions:
         network = session.get("network",{})
-        if (network.get("protocol")!="ICMP"):
+        if network.get("protocol") not in ("ICMP", "ICMPv6"):
             continue
         src_ip = network.get("src_ip","")
         if src_ip not in icmp_by_ip:
@@ -87,7 +82,7 @@ def detect_ICMP_Flood(sessions, ICMP_COUNT_THRESHOLD, ICMP_TOTAL_BYTES_THRESHOLD
     for src_ip,data in icmp_by_ip.items():
         counts=data["counts"]
         total_bytes=data["total_bytes"]
-        if count > ICMP_COUNT_THRESHOLD:
+        if counts > ICMP_COUNT_THRESHOLD:
             evidence = f"ICMP Count = {counts}"
             alert_detect_ICMP_Flood(src_ip,evidence)
         if total_bytes > ICMP_TOTAL_BYTES_THRESHOLD:
@@ -106,32 +101,7 @@ def detect_HTTP_Flood(
     HTTP_FLOOD_REQUEST_THRESHOLD,
     HTTP_FLOOD_REQUEST_RATE
 ):
-    """
-    Bat 4 dang HTTP Flood khac nhau:
 
-    (a) HTTP Flood tren 1 connection (kieu GoldenEye khi dung Keep-Alive):
-        1 session co qua nhieu request + toc do cao.
-
-    (b) HTTP Flood CONG DON tu 1 IP qua NHIEU session/connection ngan
-        (kieu Hulk): Hulk mo 1 connection MOI cho gan nhu MOI request, nen
-        tung session rieng le chi co 1-2 request -> khong bao gio vuot
-        HTTP_REQUEST_THRESHOLD neu chi xet tung session. Phai cong don
-        request_count theo src_ip tren toan bo cua so thoi gian moi thay
-        duoc.
-
-    (c) Qua nhieu connection MOI duoc mo tu 1 IP trong cua so thoi gian:
-        dau hieu chung cua ca Hulk lan GoldenEye (lien tuc tao connection
-        moi de nem request), khong phu thuoc vao viec co parse duoc HTTP
-        hay khong.
-
-    (d) Slow HTTP (Slowloris / Slowhttptest): connection ton tai rat lau
-        nhung gui du lieu nho giot, khong bao gio du de tao thanh 1 HTTP
-        message hoan chinh. QUAN TRONG: nhanh nay KHONG duoc dat dieu
-        kien "is_http" nhu ban truoc - Slowloris/Slowhttptest co y khong
-        bao gio gui du "\\r\\n\\r\\n" + Content-Length, nen is_http se mai
-        la False; dat dieu kien slow-HTTP sau is_http se khien no khong
-        bao gio duoc kiem tra dung luc can kiem tra nhat.
-    """
 
     http_flood_by_ip={}
     http_slow_by_ip={}

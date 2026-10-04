@@ -1,16 +1,10 @@
-import re
-import json
-from .sqli_detector import detect_sqli
-from .xss_detector import detect_xss
-def signature_engine(session,rules):
-    """
-    Hàm này sẽ kiểm tra các session để phát hiện các mẫu tấn công SQL Injection và XSS.
-    """
-    detect_sqli(session,rules)
-    
-    detect_xss(session,rules)
+"""Dispatcher for payload-pattern detectors."""
 
-    return
+from ids.detectors.signature.sqli_detector import detect_sqli
+from ids.detectors.signature.xss_detector import detect_xss
 
 
-    
+def signature_engine(session, rules):
+    """Run the SQL injection and XSS signatures against HTTP transactions."""
+    detect_sqli(session, rules)
+    detect_xss(session, rules)

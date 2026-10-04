@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PCAP offline · Sentinel</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/offline.css') }}">
+</head>
+<body><main class="app offline-app">
+<header class="topbar"><div class="brand"><div class="logo">⇧</div><div class="brandname">SENTINEL<small>OFFLINE PCAP ANALYSIS</small></div></div><a class="back-link" href="{{ url_for('dashboard') }}">← Dashboard live</a></header>
+{% if error %}
+<section class="card error-card"><div class="error-icon">!</div><div><h1>Không thể phân tích PCAP</h1><p>{{ error }}</p><a class="primary link-button" href="{{ url_for('dashboard') }}">Quay lại dashboard</a></div></section>
+{% elif result %}
+<section class="heading"><div><div class="eyebrow">KẾT QUẢ PHÂN TÍCH NGOẠI TUYẾN</div><h1>{{ result.filename }}</h1><p>Hoàn tất lúc {{ result.processed_at }}</p></div><a class="range" href="{{ url_for('dashboard') }}">← Về dashboard</a></section>
+<section class="metrics result-metrics">
+<div class="metric"><div class="m-label">Gói tin đã đọc</div><div class="m-value">{{ result.packets }}</div><div class="m-foot">Đọc tuần tự từ PCAP</div></div>
+<div class="metric"><div class="m-label">Flow / session</div><div class="m-value">{{ result.sessions }}</div><div class="m-foot">Đã đóng và đưa qua ML</div></div>
+<div class="metric"><div class="m-label">Alert phát hiện</div><div class="m-value">{{ result.alert_count }}</div><div class="m-foot">Kết quả riêng của file này</div></div>
+<div class="metric"><div class="m-label">Trạng thái</div><div class="m-value status-value">Hoàn tất</div><div class="m-foot">Không thay đổi live alert log</div></div>
+</section>
+<section class="card offline-alerts"><div class="card-head"><div><div class="card-title">Alert trong PCAP này</div><div class="card-sub">Chỉ bao gồm kết quả từ file {{ result.filename }}</div></div><span class="result-count">{{ result.alert_count }} alert</span></div>
+{% if result.alerts %}<div class="table-wrap"><table><thead><tr><th>Alert ID</th><th>Thời gian UTC</th><th>IP nguồn</th><th>Loại tấn công</th><th>Mức độ</th><th>Engine</th></tr></thead><tbody>
+{% for alert in result.alerts %}<tr><td class="id">{{ alert.alert_id }}</td><td>{{ alert.timestamp }}</td><td>{{ alert.src_ip }}</td><td>{{ alert.attack_type }}</td><td><span class="sev {{ alert.severity|lower }}">{{ alert.severity }}</span></td><td>{{ alert.engine }}</td></tr><tr class="evidence-row"><td colspan="6"><span>Evidence</span> {{ alert.evidence }}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<div class="empty-result"><span>✓</span><strong>Không phát hiện alert</strong><p>PCAP đã được xử lý; model không phân loại flow nào thành tấn công.</p></div>{% endif %}</section>
+{% endif %}
+</main></body></html>

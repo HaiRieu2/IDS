@@ -91,6 +91,10 @@ def _canonical_label(label):
         return None
     if compact == "benign":
         return "BENIGN"
+    if compact in {"dos hulk", "dos goldeneye"}:
+        return "HTTP Flood"
+    if compact in {"dos slowloris", "dos slowhttptest"}:
+        return "HTTP slow"
     if "sql injection" in compact or compact in {"sqli", "sql i"}:
         return "Sqli"
     if "xss" in compact or "cross site scripting" in compact:

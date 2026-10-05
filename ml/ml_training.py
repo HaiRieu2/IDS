@@ -20,9 +20,9 @@ if hasattr(sys.stdout, "reconfigure"):
 from ids.detectors.ml.features import CIC_FEATURES
 
 try:
-    from .data_processing import read_cic_csv
+    from .data_processing import CIC_COLUMN_ALIASES, read_cic_csv
 except ImportError:  # Support direct execution as well as `python -m ml.ml_training`.
-    from data_processing import read_cic_csv
+    from data_processing import CIC_COLUMN_ALIASES, read_cic_csv
 
 REQUIRED_CLASSES = {"BENIGN", "XSS", "Sqli", "Web Attack - Brute Force"}
 
@@ -35,12 +35,24 @@ def load_dataset(data_dir):
 
     datasets = []
     for path in files:
+        header = pd.read_csv(path, nrows=0, low_memory=False, encoding_errors="replace")
+        header_names = {str(name).strip().casefold() for name in header.columns}
+        cic_names = {
+            alias.casefold()
+            for aliases in CIC_COLUMN_ALIASES.values()
+            for alias in aliases
+        }
+        if not header_names.intersection(cic_names):
+            print(f"Bỏ qua CSV không phải CIC flow: {path}")
+            continue
         print(f"Đang đọc: {path}")
         frame = read_cic_csv(path)
         frame["_source"] = path.name
         print("  Số flow sau chuẩn hóa:", len(frame))
         print(frame["Label"].value_counts().to_string())
         datasets.append(frame)
+    if not datasets:
+        raise FileNotFoundError(f"Không tìm thấy CIC flow CSV có feature phù hợp trong {data_dir}")
     return pd.concat(datasets, ignore_index=True)
 
 
@@ -54,7 +66,11 @@ def validate_dataset(data):
     missing_classes = sorted(REQUIRED_CLASSES - set(counts.index))
     if missing_classes:
         raise ValueError("Dataset thiếu lớp bắt buộc: " + ", ".join(missing_classes))
-    if not any("dos" in str(label).casefold() for label in counts.index):
+    if not any(
+        "dos" in str(label).casefold()
+        or str(label).casefold() in {"http flood", "http slow"}
+        for label in counts.index
+    ):
         raise ValueError("Dataset không có lớp DoS; không thể huấn luyện đủ phạm vi đề tài.")
     too_small = counts[counts < 2]
     if not too_small.empty:

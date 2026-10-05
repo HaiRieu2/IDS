@@ -255,7 +255,7 @@ Model được nạp lazy từ `ml/request_text_model.joblib` và runtime theo d
 
 - `read_cic_csv(path)` đọc theo chunk và chỉ giữ Label cùng 67 cột ML cần thiết; vì vậy không phải giữ hơn 50 cột không dùng trong RAM. Hàm nhận hai dạng header của CIC-IDS-2017 và CICFlowMeter-V3 (CIC-IDS-2018).
 - `normalize_columns(data)` đổi các alias như `Dst Port`, `Tot Fwd Pkts`, `Flow Byts/s`, `FIN Flag Cnt` về tên chuẩn dùng lúc live.
-- `data_processing(data)` làm sạch tên cột/nhãn, đổi Web brute-force/XSS/SQLi về lớp thống nhất, giữ nhãn FTP/SSH riêng, bỏ Heartbleed, đổi feature thành số và thay Inf/NaN bằng 0.
+- `data_processing(data)` làm sạch tên cột/nhãn, gộp DoS Hulk/GoldenEye thành `HTTP Flood`, gộp DoS slowloris/Slowhttptest thành `HTTP slow`, đổi Web brute-force/XSS/SQLi về lớp thống nhất, giữ nhãn FTP/SSH riêng, bỏ Heartbleed, đổi feature thành số và thay Inf/NaN bằng 0.
 - `CIC_FEATURES` là schema chung 67 cột và thứ tự vector. Đây là hằng số, không phải hàm.
 - `load_dataset(data_dir)` tìm CSV đệ quy, đọc từng file qua `read_cic_csv`, in số lượng lớp từng nguồn và gắn tên nguồn để đánh giá chéo.
 - `validate_dataset(data)` kiểm tra cột feature, lớp BENIGN/XSS/SQLi/Brute Force/DoS và số mẫu tối thiểu trước khi train.
@@ -266,9 +266,9 @@ Model được nạp lazy từ `ml/request_text_model.joblib` và runtime theo d
 - `ml_training()` điều phối loader và trainer theo đường dẫn của project.
 - `main()` gọi `ml_training()` khi chạy module.
 
-Lần huấn luyện hiện tại nạp 1.911.633 flow: BENIGN 1.656.430; DoS Hulk 231.073; DoS GoldenEye 10.293; DoS slowloris 5.796; DoS Slowhttptest 5.499; Web Brute Force 1.756; XSS 731; SQLi 55. Model cuối có 160 cây và 67 feature. Trên stratified holdout, recall raw-argmax của model mới: DoS 0,99–1,00; Web Brute Force 0,83; XSS 0,30; SQLi 0,14. Baseline 25 feature có XSS 0,32 và SQLi 0,14, nên holdout ngẫu nhiên chưa chứng minh feature mới cải thiện nhóm web. Báo cáo này chưa tính backstop ML 0,15 ở runtime. Dù vậy, đây là bằng chứng thật rằng phần web/SQL đang còn bỏ sót.
+Lần huấn luyện hiện tại nạp 1.911.633 flow: BENIGN 1.656.430; HTTP Flood 241.366 (Hulk + GoldenEye); HTTP slow 11.295 (slowloris + Slowhttptest); Web Brute Force 1.756; XSS 731; SQLi 55. Model cuối có 160 cây và 67 feature. Trên stratified holdout của model gộp nhãn, recall raw-argmax là HTTP Flood 1,00; HTTP slow 1,00; Web Brute Force 0,82; XSS 0,33; SQLi 0,29. Với backstop runtime 0,15, recall XSS là 0,37 và SQLi 0,36; recall nhị phân attack 0,9998 nhưng false-positive rate BENIGN là 0,0007. Holdout ngẫu nhiên chưa chứng minh hiệu quả trên traffic độc lập.
 
-Khi fit tạm bằng CIC-IDS-2017 rồi kiểm tra file 2018 riêng, recall Web Brute Force là 0,01; XSS 0 và SQLi 0 (DoS không có trong ngày 2018 này). Điều này cho thấy khác biệt giữa ngày/phiên bản/cách trích xuất có thể làm mô hình tổng quát hóa kém. Vì vậy model cuối được fit trên cả hai nguồn, nhưng cần thêm capture live của chính lab và kiểm tra false negative trước khi kết luận mô hình tốt. Stratified holdout còn có thể lạc quan vì flow cùng ngày capture được chia ngẫu nhiên; đánh giá chéo nguồn phản ánh domain shift tốt hơn.
+Khi fit tạm bằng CIC-IDS-2017 rồi kiểm tra file 2018 riêng, recall raw-argmax Web Brute Force là 0,01; XSS và SQLi là 0; file này không có HTTP Flood/HTTP slow. Với backstop 0,15, recall attack nhị phân là 0,7182 và false-positive rate BENIGN là 0,1356. Khác biệt ngày/phiên bản/cách trích xuất có thể làm mô hình tổng quát hóa kém. Model cuối được fit trên cả hai nguồn; vẫn cần capture live của lab để đánh giá false negative và false positive.
 
 **Accuracy không đồng nghĩa không bỏ sót.** Khi bảo vệ hãy đọc recall của từng lớp, đặc biệt XSS/SQLi/Brute Force. Ngưỡng xác suất thấp thường bắt được thêm attack nhưng cũng tạo thêm false positive. Hiện chưa có bảo đảm bỏ sót bằng 0.
 

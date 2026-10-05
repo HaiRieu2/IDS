@@ -3,7 +3,7 @@
 ## Artifacts
 
 - Active model: `ml/rf_model.pkl` (160 trees, 67 CICFlowMeter features).
-- Candidate copy: `reports/model_candidates/rf_model_67_candidate.pkl`.
+- Candidate copy from the HTTP DoS label merge: `reports/model_candidates/rf_model_http_dos_labels.pkl`.
 - Previous 25-feature model backup: `reports/model_backups/rf_model_25_features_before_expansion.pkl`.
 
 The 67-column order is shared by `ids/detectors/ml/features.py`, the runtime
@@ -15,10 +15,8 @@ runtime smoke prediction were checked for the same 67 names in the same order.
 | Class | Flow count |
 |---|---:|
 | BENIGN | 1,656,430 |
-| DoS Hulk | 231,073 |
-| DoS GoldenEye | 10,293 |
-| DoS slowloris | 5,796 |
-| DoS Slowhttptest | 5,499 |
+| HTTP Flood (DoS Hulk + DoS GoldenEye) | 241,366 |
+| HTTP slow (DoS slowloris + DoS Slowhttptest) | 11,295 |
 | Web Attack - Brute Force | 1,756 |
 | XSS | 731 |
 | Sqli | 55 |
@@ -28,34 +26,34 @@ Heartbleed rows are excluded by the existing dataset normalizer. SQLi remains
 very underrepresented, which limits what any supervised model can learn about
 that class.
 
-## Same-split comparison
+## Merged-label model evaluation
 
-Both schemas were evaluated using the same stratified 75/25 split and the same
-80-tree Random Forest configuration. Values below are rounded as printed by
-scikit-learn.
+The merged-label model was evaluated using a stratified 75/25 split and an
+80-tree Random Forest. Values below are rounded as printed by scikit-learn.
 
-| Class | 25-feature recall | 67-feature recall | Holdout count |
+| Class | Raw argmax recall | Live-threshold recall | Holdout count |
 |---|---:|---:|---:|
 | BENIGN | 1.00 | 1.00 | 414,108 |
-| DoS GoldenEye | 0.99 | 0.99 | 2,573 |
-| DoS Hulk | 1.00 | 1.00 | 57,768 |
-| DoS Slowhttptest | 0.99 | 0.99 | 1,375 |
-| DoS slowloris | 0.99 | 1.00 | 1,449 |
-| Sqli | 0.14 | 0.14 | 14 |
-| Web Attack - Brute Force | 0.83 | 0.83 | 439 |
-| XSS | 0.32 | 0.30 | 183 |
+| HTTP Flood | 1.00 | 1.00 | 60,341 |
+| HTTP slow | 1.00 | 1.00 | 2,824 |
+| Sqli | 0.29 | 0.36 | 14 |
+| Web Attack - Brute Force | 0.82 | 0.86 | 439 |
+| XSS | 0.33 | 0.37 | 183 |
 
-The expanded model did not improve SQLi or XSS recall on this random holdout.
-Its macro recall/F1 stayed about 0.78/0.80. The high overall accuracy is
-dominated by the large BENIGN class and should not be used alone to claim
-attack coverage.
+The live-threshold report uses `ML_ALERT_THRESHOLD = 0.15`. Overall binary
+attack recall was 0.9998 (63,788/63,801) and BENIGN false-positive rate was
+0.0007 (307/414,108) on this random holdout. These results can be optimistic
+because related capture traffic is split randomly; high overall accuracy is
+dominated by BENIGN and should not be used alone to claim attack coverage.
 
 ## Cross-dataset check
 
-The expanded model trained on CIC-IDS-2017 and evaluated on the Thursday
-CIC-IDS-2018 web-attack file had recall 0.89 for BENIGN, 0.01 for Web Attack -
-Brute Force, and 0.00 for XSS and Sqli. This is a substantial dataset/capture
-shift. That file has no DoS examples, so it does not measure DoS generalization.
+The merged-label model trained on CIC-IDS-2017 and evaluated on the Thursday
+CIC-IDS-2018 web-attack file had raw-argmax recall 0.96 for BENIGN, 0.01 for
+Web Attack - Brute Force, and 0.00 for XSS and Sqli. The file has no HTTP Flood
+or HTTP slow examples, so it does not measure generalization for those classes.
+With the runtime threshold backstop enabled, binary attack recall was 0.7182
+and BENIGN false-positive rate was 0.1356 on this source-shift check.
 
 ## Runtime interpretation
 

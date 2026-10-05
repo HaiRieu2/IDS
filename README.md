@@ -40,7 +40,7 @@ Chạy:
 python -m ml.ml_training
 ```
 
-Trainer kiểm tra các lớp BENIGN/DoS/XSS/SQLi/Web Brute Force, giữ riêng FTP/SSH brute-force, dùng Random Forest class weights; mỗi cây lấy bootstrap 40% để huấn luyện bộ flow lớn. Trainer in stratified holdout metrics, đánh giá thêm bằng cách fit CIC-IDS-2017 và kiểm tra CIC-IDS-2018, rồi fit model cuối trên toàn bộ dữ liệu và lưu `ml/rf_model.pkl`. Khởi động lại dashboard/capture sau khi thay model để tiến trình nạp model mới.
+Trainer chuẩn hóa DoS Hulk và DoS GoldenEye thành `HTTP Flood`, DoS slowloris và DoS Slowhttptest thành `HTTP slow`; các nhãn BENIGN/XSS/SQLi/Web Brute Force cũng được chuẩn hóa, còn FTP/SSH brute-force được giữ riêng. Random Forest dùng class weights và mỗi cây lấy bootstrap 40% để huấn luyện bộ flow lớn. Trainer in stratified holdout metrics, đánh giá thêm bằng cách fit CIC-IDS-2017 và kiểm tra CIC-IDS-2018, rồi fit model cuối trên toàn bộ dữ liệu và lưu `ml/rf_model.pkl`. Khởi động lại dashboard/capture sau khi thay model để tiến trình nạp model mới.
 
 Runtime và trainer của model flow hiện dùng chung 67 đặc trưng CICFlowMeter (một phần của bộ 78 cột). Trường byte/packet-length ML đã dùng payload TCP/UDP như CICFlowMeter; byte IP cho Dashboard vẫn tách riêng. Đây vẫn là phép tính tương thích gần đúng cho đến khi so sánh từng flow trên cùng PCAP với đúng phiên bản CICFlowMeter. Ngưỡng `ML_ALERT_THRESHOLD` hiện là 0.15 để tăng cảnh báo khi model còn nghiêng về BENIGN; đánh đổi là false positive có thể tăng. Không mô hình nào bảo đảm bỏ sót bằng 0; xem recall từng lớp trên tập độc lập và đánh giá lại bằng PCAP live/ngoài huấn luyện trước khi dùng ngoài lab. CIC-IDS-2018 attribution/citation và điều kiện tái phân phối được nêu trên trang CIC chính thức.
 

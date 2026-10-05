@@ -178,7 +178,7 @@ def detect_HTTP_Flood(
             and total_duration > HTTP_SLOW_DURATION_THRESHOLD
             ):
             evidence = f"HTTP SLOW: HTTP REQUEST COUNT = {request_count} and REQUEST RATE = {request_rate} and Fwd Packets =  {fwd_packets} and Duration = {total_duration}"
-            alert_detect_HTTP_Flood(src_ip,evidence)
+            alert_detect_HTTP_Flood(src_ip, evidence, attack_type="HTTP slow")
 
 
     for src_ip,data in http_flood_by_ip.items():

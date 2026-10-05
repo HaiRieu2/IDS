@@ -148,10 +148,10 @@ def alert_detect_UDP_Flood(src_ip, evidence):
     )
 
 
-def alert_detect_HTTP_Flood(src_ip, evidence):
+def alert_detect_HTTP_Flood(src_ip, evidence, attack_type="HTTP Flood"):
     return _make_and_save_alert(
-        src_ip, "DoS", "behavior", "high", evidence,
-        dedup_key="http_flood",
+        src_ip, attack_type, "behavior", "high", evidence,
+        dedup_key=attack_type.casefold().replace(" ", "_"),
     )
 
 

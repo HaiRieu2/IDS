@@ -15,7 +15,7 @@ def process_closed_session(session, rules):
     engines = (
         ("behavior", lambda: behavior_engine(session, rules)),
         ("signature", lambda: signature_engine(session, rules)),
-        ("HTTP request machine learning", lambda: request_text_engine(session)),
+        ("HTTP request machine learning", lambda: request_text_engine(session, rules)),
         ("machine learning", lambda: ml_engine(session)),
     )
     errors = []

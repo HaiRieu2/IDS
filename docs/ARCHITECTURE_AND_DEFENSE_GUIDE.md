@@ -241,7 +241,7 @@ Các nhóm feature hiện tại:
 ### 5.4 Request-level ML: `ids/detectors/ml/request_text_engine.py`
 
 - `format_request_text(method, uri, body)` ghép request theo đúng thứ tự `method + " " + uri + " " + body`; body rỗng thì chuỗi kết thúc ở URI. HTTP version và headers không được đưa vào model.
-- `request_text_engine(session)` duyệt từng transaction trong session đã đóng, predict mỗi request riêng, rồi tạo alert machine learning cho nhãn XSS/SQLi. Request BENIGN không tạo alert.
+- `request_text_engine(session, rules)` duyệt từng transaction trong session đã đóng. Nó lấy xác suất XSS và SQLi, chọn lớp có xác suất cao hơn, rồi chỉ tạo alert khi xác suất đó đạt `REQUEST_TEXT_ALERT_THRESHOLD` (mặc định 0.6 trong `config/rules.json`). Dưới ngưỡng, request được coi là BENIGN.
 - `ml/request_text_training.py::load_dataset(path)` đọc hai cột `request_text`, `label`, bỏ dòng thiếu và chấp nhận ba nhãn BENIGN, SQLi, XSS.
 - `build_model()` ghép word n-gram và character n-gram TF-IDF, rồi dùng Logistic Regression cân bằng lớp. Pipeline được lưu bằng joblib tại `ml/request_text_model.joblib`.
 - `train_request_model(...)` báo cáo stratified random holdout 20%, fit lại trên toàn bộ dataset rồi ghi model. `main()` in tiến trình ra terminal và lưu vào `reports/request_text_training.log`.

@@ -54,6 +54,6 @@ python -m ml.request_text_training
 
 Tiến trình train được in trực tiếp ra terminal và lưu vào `reports/request_text_training.log`.
 
-Pipeline kết hợp word n-gram và character n-gram để giữ cả từ khóa và dấu câu trong request, sau đó phân lớp bằng Logistic Regression. Khi session đóng, IDS predict từng HTTP request theo định dạng `method + " " + uri + " " + body`, giống dataset; header HTTP và HTTP version không được đưa vào model. Request dự đoán là XSS hoặc SQLi sẽ tạo alert từ machine learning; model CICFlowMeter tiếp tục phân loại flow riêng. Model được serialize bằng joblib và có phần mở rộng `.joblib`. Chạy lại lệnh train để cập nhật model; runtime tự nạp lại file model mới.
+Pipeline kết hợp word n-gram và character n-gram để giữ cả từ khóa và dấu câu trong request, sau đó phân lớp bằng Logistic Regression. Khi session đóng, IDS predict từng HTTP request theo định dạng `method + " " + uri + " " + body`, giống dataset; header HTTP và HTTP version không được đưa vào model. IDS tạo alert XSS/SQLi khi xác suất cao nhất giữa hai lớp tấn công đạt `REQUEST_TEXT_ALERT_THRESHOLD` (mặc định 0.6 trong `config/rules.json`). Model CICFlowMeter tiếp tục phân loại flow riêng. Model request được serialize bằng joblib và có phần mở rộng `.joblib`. Chạy lại lệnh train để cập nhật model; runtime tự nạp lại file model mới.
 
 Báo cáo trong lúc train dùng stratified random holdout. Dataset tổng hợp có thể chứa các họ mẫu gần nhau giữa train/test, nên không xem điểm này là kết quả tổng quát hóa trên traffic thật. Đánh giá thêm bằng request thật đã gán nhãn độc lập.

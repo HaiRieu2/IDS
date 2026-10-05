@@ -14,6 +14,7 @@
     "MAX_FAILED_LOGINS": 10,
     "BRUTE_FORCE_REQUEST_RATE_THRESHOLD": 0.2,
     "ML_ALERT_THRESHOLD": 0.15,
+    "REQUEST_TEXT_ALERT_THRESHOLD": 0.6,
     "XSS_PATTERNS": [
         "<\\s*script\\b",
         "javascript\\s*:",

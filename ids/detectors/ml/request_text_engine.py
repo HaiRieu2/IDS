@@ -112,6 +112,11 @@ def request_text_engine(session, rules=None):
             src_ip,
         )
         if prediction.casefold() != "benign":
-            alert_machine_learning(src_ip, prediction, confidence=confidence)
+            alert_machine_learning(
+                src_ip,
+                prediction,
+                confidence=confidence,
+                request_text=request_text,
+            )
 
     return predictions

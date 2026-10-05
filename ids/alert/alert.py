@@ -176,8 +176,13 @@ def alert_detect_sqli(src_ip, payload):
     )
 
 
-def alert_machine_learning(src_ip, attack_type, confidence=None):
-    evidence = attack_type if confidence is None else f"{attack_type} (model confidence={confidence:.3f})"
+def alert_machine_learning(src_ip, attack_type, confidence=None, request_text=None):
+    if request_text is None:
+        evidence = attack_type if confidence is None else f"{attack_type} (model confidence={confidence:.3f})"
+    else:
+        evidence = f"request_text: {request_text}"
+        if confidence is not None:
+            evidence += f" (model confidence={confidence:.3f})"
     return _make_and_save_alert(
         src_ip, attack_type, "machine learning", "high", evidence,
         dedup_key=f"ml_{attack_type}",

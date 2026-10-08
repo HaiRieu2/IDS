@@ -1,0 +1,1 @@
+{"alert_id": "A267", "timestamp": "2026-10-08T04:07:05.523176+00:00", "src_ip": "192.168.6.130", "attack_type": "HTTP slow", "engine": "behavior", "severity": "high", "evidence": "HTTP SLOW: HTTP REQUEST COUNT = 0 and REQUEST RATE = 0.0 and Fwd Packets =  4 and Duration = 91.004565"}

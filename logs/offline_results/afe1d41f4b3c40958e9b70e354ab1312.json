@@ -1,0 +1,19 @@
+{
+  "result_id": "afe1d41f4b3c40958e9b70e354ab1312",
+  "filename": "hulk.pcap",
+  "processed_at": "2026-10-07T17:17:11.848068+00:00",
+  "packets": 93,
+  "sessions": 16,
+  "alert_count": 1,
+  "alerts": [
+    {
+      "alert_id": "A180",
+      "timestamp": "2026-10-07T17:17:11.749802+00:00",
+      "src_ip": "10.0.0.2",
+      "attack_type": "HTTP slow",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "HTTP slow (model confidence=0.305)"
+    }
+  ]
+}

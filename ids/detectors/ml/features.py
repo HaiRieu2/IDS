@@ -1,4 +1,4 @@
-"""Shared CICFlowMeter feature orders used by training and runtime inference."""
+"""The shared 61-feature CICFlowMeter schema used by training and inference."""
 
 CIC_FEATURES = (
     "Destination Port",
@@ -32,9 +32,6 @@ CIC_FEATURES = (
     "Bwd IAT Max",
     "Bwd IAT Min",
     "Fwd PSH Flags",
-    "Bwd PSH Flags",
-    "Fwd URG Flags",
-    "Bwd URG Flags",
     "Fwd Header Length",
     "Bwd Header Length",
     "Fwd Packets/s",
@@ -46,12 +43,9 @@ CIC_FEATURES = (
     "Packet Length Variance",
     "FIN Flag Count",
     "SYN Flag Count",
-    "RST Flag Count",
     "PSH Flag Count",
     "ACK Flag Count",
     "URG Flag Count",
-    "CWE Flag Count",
-    "ECE Flag Count",
     "Down/Up Ratio",
     "Average Packet Size",
     "Avg Fwd Segment Size",

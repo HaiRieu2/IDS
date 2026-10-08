@@ -1,0 +1,100 @@
+{
+  "result_id": "f6615c57f61b4cd28d214eec4393b9aa",
+  "filename": "PCAP_BruteForce.pcapng",
+  "processed_at": "2026-10-07T18:03:50.310227+00:00",
+  "packets": 84204,
+  "sessions": 6502,
+  "alert_count": 10,
+  "alerts": [
+    {
+      "alert_id": "A194",
+      "timestamp": "2026-10-07T17:54:28.522864+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "SQLi",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "request_text: POST /login username=admin&password=1126 (model confidence=0.949)"
+    },
+    {
+      "alert_id": "A195",
+      "timestamp": "2026-10-07T17:54:29.394714+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "Web Attack - Brute Force",
+      "engine": "behavior",
+      "severity": "high",
+      "evidence": "IP 127.0.0.1 co 11 lan dang nhap that bai (nguong cho phep: 10)"
+    },
+    {
+      "alert_id": "A196",
+      "timestamp": "2026-10-07T17:56:28.649414+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "SQLi",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "request_text: POST /login username=admin&password=1119 (model confidence=0.949)"
+    },
+    {
+      "alert_id": "A197",
+      "timestamp": "2026-10-07T17:56:29.428519+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "Web Attack - Brute Force",
+      "engine": "behavior",
+      "severity": "high",
+      "evidence": "IP 127.0.0.1 co 1625 lan dang nhap that bai (nguong cho phep: 10)"
+    },
+    {
+      "alert_id": "A198",
+      "timestamp": "2026-10-07T17:58:28.727090+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "SQLi",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "request_text: POST /login username=admin&password=1122 (model confidence=0.950)"
+    },
+    {
+      "alert_id": "A199",
+      "timestamp": "2026-10-07T17:58:29.501213+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "Web Attack - Brute Force",
+      "engine": "behavior",
+      "severity": "high",
+      "evidence": "IP 127.0.0.1 co 1137 lan dang nhap that bai (nguong cho phep: 10)"
+    },
+    {
+      "alert_id": "A200",
+      "timestamp": "2026-10-07T18:00:28.780516+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "SQLi",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "request_text: POST /login username=admin&password=1127 (model confidence=0.949)"
+    },
+    {
+      "alert_id": "A201",
+      "timestamp": "2026-10-07T18:00:29.543976+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "Web Attack - Brute Force",
+      "engine": "behavior",
+      "severity": "high",
+      "evidence": "IP 127.0.0.1 co 1753 lan dang nhap that bai (nguong cho phep: 10)"
+    },
+    {
+      "alert_id": "A202",
+      "timestamp": "2026-10-07T18:02:28.844374+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "SQLi",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "request_text: POST /login username=admin&password=1113 (model confidence=0.949)"
+    },
+    {
+      "alert_id": "A203",
+      "timestamp": "2026-10-07T18:02:29.581734+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "Web Attack - Brute Force",
+      "engine": "behavior",
+      "severity": "high",
+      "evidence": "IP 127.0.0.1 co 1169 lan dang nhap that bai (nguong cho phep: 10)"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "result_id": "63ad75b94db5477d8ebdf2e48c7c1308",
+  "filename": "http_slowloris.pcap",
+  "processed_at": "2026-10-07T12:20:33.482729+00:00",
+  "packets": 8000,
+  "sessions": 2000,
+  "alert_count": 2,
+  "alerts": [
+    {
+      "alert_id": "A005",
+      "timestamp": "2026-10-07T12:16:44.617436+00:00",
+      "src_ip": "154.49.2.126",
+      "attack_type": "HTTP slow",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "HTTP slow (model confidence=0.825)"
+    },
+    {
+      "alert_id": "A006",
+      "timestamp": "2026-10-07T12:19:27.598720+00:00",
+      "src_ip": "154.49.2.126",
+      "attack_type": "HTTP slow",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "HTTP slow (model confidence=0.812)"
+    }
+  ]
+}

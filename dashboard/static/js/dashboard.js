@@ -40,7 +40,7 @@ function safe(value) {
 function renderRows(alerts) {
   document.getElementById('alertCount').textContent = `${alerts.length} sự kiện`;
   const tbody = document.getElementById('alertRows');
-  tbody.innerHTML = alerts.length ? alerts.slice(0, 30).map(a => `<tr data-id="${safe(a.alert_id)}"><td class="id">${safe(a.alert_id)}</td><td>${safe(fmtTime(a.timestamp))}</td><td>${safe(a.src_ip)}</td><td>${safe(a.attack_type)}</td><td><span class="sev ${safe(String(a.severity||'').toLowerCase())}">${safe(severityNames[String(a.severity||'').toLowerCase()]||a.severity)}</span></td></tr>`).join('') : '<tr><td colspan="5" class="empty-row">Chưa có alert trong file log.</td></tr>';
+  tbody.innerHTML = alerts.length ? alerts.slice(0, 30).map(a => `<tr data-id="${safe(a.alert_id)}"><td class="id">${safe(a.alert_id)}</td><td>${safe(fmtTime(a.timestamp))}</td><td>${safe(a.src_ip)}</td><td>${safe(a.attack_type)}</td><td>${safe(a.engine || '—')}</td><td><span class="sev ${safe(String(a.severity||'').toLowerCase())}">${safe(severityNames[String(a.severity||'').toLowerCase()]||a.severity)}</span></td></tr>`).join('') : '<tr><td colspan="6" class="empty-row">Chưa có alert trong file log.</td></tr>';
   tbody.querySelectorAll('tr[data-id]').forEach(row => row.addEventListener('click', () => showAlert(alerts.find(a => String(a.alert_id) === row.dataset.id))));
 }
 function showAlert(a) {

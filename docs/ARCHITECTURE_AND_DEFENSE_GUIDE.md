@@ -136,7 +136,7 @@ Cần reassembly vì một HTTP request có thể bị TCP chia thành nhiều p
 
 ### 4.6 Xây session và đặc trưng flow: `ids/capture/session_builder.py`
 
-`SessionBuilder` biến packet đã parse thành flow record gần dạng CICFlowMeter ở **67 đặc trưng được trainer sử dụng**.
+`SessionBuilder` biến packet đã parse thành flow record gần dạng CICFlowMeter. Feature adapter chỉ xuất 61 feature cho model; sáu cột cờ bị loại khỏi vector đầu vào.
 
 - `_synchronized(method)` decorator khóa các thao tác đọc/ghi session để autosave và packet worker không sửa dictionary cùng lúc.
 - `__init__()` tạo bảng session, flow key đang hoạt động, timeout và giới hạn thời lượng.
@@ -211,11 +211,11 @@ Signature có thể phát hiện chuỗi nhìn thấy được trong HTTP. Nó k
 
 ### 5.3 Machine learning: `ids/detectors/ml/`
 
-- `feature_extractor(session)` chuyển flow đã ghép thành 67 giá trị theo đúng tên và thứ tự `CIC_FEATURES`. Duration và IAT được biểu diễn bằng microseconds; tốc độ gói/byte theo giây; độ dài và header theo byte. Destination Port giữ nguyên cổng thực tế trong packet.
+- `feature_extractor(session)` tạo vector 61 giá trị theo `CIC_FEATURES`. Duration và IAT được biểu diễn bằng microseconds; tốc độ gói/byte theo giây; độ dài và header theo byte. Destination Port giữ nguyên cổng thực tế trong packet.
 - `ml_engine(session)` bỏ flow chỉ có một packet, tạo DataFrame có đủ tên cột, gọi model `predict`/`predict_proba`, rồi áp `ML_ALERT_THRESHOLD` để bổ sung alert khi nhãn thô là BENIGN nhưng xác suất lớp tấn công lớn hơn ngưỡng.
 - `SessionBuilder` bổ sung thống kê payload packet theo chiều, IAT từng chiều, header length, PSH/URG theo chiều, CWR/ECE, packet size/ratio, active/idle và min segment size. Các thống kê online dùng Welford để không phải giữ toàn bộ packet trong RAM.
 
-`CIC_FEATURES` trong `ids/detectors/ml/features.py` là schema duy nhất cho flow trainer và runtime. Nó có 67 cột, đều được lấy từ CSV CIC-IDS-2017/2018; feature HTTP như request rate/URI không nằm trong Random Forest vì các CSV nhãn hiện có không cung cấp các feature ứng dụng tương ứng. HTTP được reassemble và chuyển tới signature cùng model request-text riêng.
+`CIC_FEATURES` là schema chung 61 cột cho runtime và trainer. Schema bỏ Bwd PSH Flags, Fwd URG Flags, Bwd URG Flags, ECE Flag Count, RST Flag Count và CWE Flag Count khỏi vector đầu vào. Trainer chỉ đọc CSV CIC-IDS-2017. Feature HTTP như request rate/URI không nằm trong Random Forest vì flow CSV không cung cấp các feature ứng dụng tương ứng. HTTP được reassemble và chuyển tới signature cùng model request-text riêng.
 
 Các nhóm feature hiện tại:
 
@@ -234,14 +234,14 @@ Các nhóm feature hiện tại:
 2. Packet đầu tiên trong flow thiết lập forward direction và khởi tạo các running statistics. Gói tới từ endpoint đối diện được tính backward.
 3. Mỗi packet cập nhật số gói, payload bytes, phân bố độ dài, header bytes và cờ theo chiều. Với packet thứ hai trở đi trong một chiều, thời gian từ packet trước cùng chiều được thêm vào directional IAT.
 4. Active/idle chia theo ngưỡng 5 giây. Các thống kê được xuất ở lúc session được đóng; vector được dựng bởi `feature_extractor`.
-5. Trainer đọc đúng các cột CIC có sẵn, chuẩn hóa alias, rồi huấn luyện model với cùng tên/cùng thứ tự feature. Runtime truyền DataFrame có tên cột để sklearn kiểm tra schema.
+5. Trainer đọc đúng 61 cột CIC-IDS-2017, làm sạch giá trị rồi huấn luyện model với thứ tự `CIC_FEATURES`. Runtime cũng tạo vector theo đúng thứ tự này. Artifact phải được train theo cùng schema trước khi nhánh flow ML được sử dụng.
 
-Đây là subset 67 feature trong bộ CICFlowMeter 78 cột, không có nghĩa các feature ứng dụng HTTP đã được học. Cách tính runtime được xây dựng theo quy ước CICFlowMeter nhưng phụ thuộc độ chính xác timestamp, version, packet visibility và timeout. Cần xác nhận bằng cùng một PCAP và đúng bản CICFlowMeter trước khi nói các giá trị khớp bit-for-bit.
+Đây là subset 61 feature của bộ CICFlowMeter 78 cột. Điều này không có nghĩa các feature ứng dụng HTTP đã được học. Cách tính runtime được xây dựng theo quy ước CICFlowMeter nhưng phụ thuộc độ chính xác timestamp, version, packet visibility và timeout. Cần xác nhận bằng cùng một PCAP và đúng bản CICFlowMeter trước khi nói các giá trị khớp bit-for-bit.
 
 ### 5.4 Request-level ML: `ids/detectors/ml/request_text_engine.py`
 
 - `format_request_text(method, uri, body)` ghép request theo đúng thứ tự `method + " " + uri + " " + body`; body rỗng thì chuỗi kết thúc ở URI. HTTP version và headers không được đưa vào model.
-- `request_text_engine(session, rules)` duyệt từng transaction trong session đã đóng. Nó lấy xác suất XSS và SQLi, chọn lớp có xác suất cao hơn, rồi chỉ tạo alert khi xác suất đó đạt `REQUEST_TEXT_ALERT_THRESHOLD` (mặc định 0.6 trong `config/rules.json`). Dưới ngưỡng, request được coi là BENIGN.
+- `request_text_engine(session, rules)` duyệt từng transaction trong session đã đóng. Nó lấy xác suất XSS và SQLi, chọn lớp có xác suất cao hơn, rồi chỉ tạo alert khi xác suất đó đạt `REQUEST_TEXT_ALERT_THRESHOLD` (hiện là 0.8 trong `config/rules.json`). Dưới ngưỡng, request được coi là BENIGN.
 - Alert do model request-text tạo lưu nguyên chuỗi `request_text` cùng model confidence trong trường `evidence` của `alerts.json`; dashboard và trang kết quả offline hiển thị trường này.
 - `ml/request_text_training.py::load_dataset(path)` đọc hai cột `request_text`, `label`, bỏ dòng thiếu và chấp nhận ba nhãn BENIGN, SQLi, XSS.
 - `build_model()` ghép word n-gram và character n-gram TF-IDF, rồi dùng Logistic Regression cân bằng lớp. Pipeline được lưu bằng joblib tại `ml/request_text_model.joblib`.
@@ -251,26 +251,19 @@ Các nhóm feature hiện tại:
 
 Model được nạp lazy từ `ml/request_text_model.joblib` và runtime theo dõi thời điểm sửa file để nạp lại model sau lần train kế tiếp. Nếu model chưa tồn tại, nhánh request ML log cảnh báo rồi bỏ qua, các detector khác vẫn chạy.
 
-### 5.5 Training flow model: `ml/`
+### 5.5 Huấn luyện flow model: `ml/rf_training.py`
 
-- `read_cic_csv(path)` đọc theo chunk và chỉ giữ Label cùng 67 cột ML cần thiết; vì vậy không phải giữ hơn 50 cột không dùng trong RAM. Hàm nhận hai dạng header của CIC-IDS-2017 và CICFlowMeter-V3 (CIC-IDS-2018).
-- `normalize_columns(data)` đổi các alias như `Dst Port`, `Tot Fwd Pkts`, `Flow Byts/s`, `FIN Flag Cnt` về tên chuẩn dùng lúc live.
-- `data_processing(data)` làm sạch tên cột/nhãn, gộp DoS Hulk/GoldenEye thành `HTTP Flood`, gộp DoS slowloris/Slowhttptest thành `HTTP slow`, đổi Web brute-force/XSS/SQLi về lớp thống nhất, giữ nhãn FTP/SSH riêng, bỏ Heartbleed, đổi feature thành số và thay Inf/NaN bằng 0.
-- `CIC_FEATURES` là schema chung 67 cột và thứ tự vector. Đây là hằng số, không phải hàm.
-- `load_dataset(data_dir)` tìm CSV đệ quy, đọc từng file qua `read_cic_csv`, in số lượng lớp từng nguồn và gắn tên nguồn để đánh giá chéo.
-- `validate_dataset(data)` kiểm tra cột feature, lớp BENIGN/XSS/SQLi/Brute Force/DoS và số mẫu tối thiểu trước khi train.
-- `build_model(n_estimators=160)` cấu hình Random Forest entropy, class weight cân bằng, dùng bootstrap 40% flow mỗi cây để giữ thời gian/ram phù hợp với CSV hàng triệu dòng. Holdout/cross-source dùng 80 cây; model cuối dùng 160 cây.
-- `_report(...)` in precision/recall/F1 và confusion matrix theo lớp.
-- `_cross_dataset_report(data)` chỉ fit tạm trên CIC-IDS-2017 rồi đo trên file CIC-IDS-2018 chưa dùng để fit; đây là kiểm tra chuyển miền giữa bộ dữ liệu, không thay thế test live.
-- `train_and_evaluate(data, model_path)` đánh giá stratified holdout, chạy đánh giá chéo nguồn, sau đó fit model cuối trên toàn bộ flow và lưu model.
-- `ml_training()` điều phối loader và trainer theo đường dẫn của project.
-- `main()` gọi `ml_training()` khi chạy module.
+- `read_cic_csv(path)` trong `ml/data_processing.py` đọc theo chunk, chỉ lấy Label và 61 feature train chuẩn từ CIC-IDS-2017.
+- `normalize_columns(data)` bỏ khoảng trắng thừa quanh tên cột; `data_processing(data)` chuẩn hóa nhãn DoS cần gộp, loại Heartbleed, đổi feature thành số và thay giá trị thiếu/vô cực bằng 0.
+- `CIC_FEATURES` là schema duy nhất gồm 61 cột dùng cho cả runtime và training.
+- `rf_training.py::main()` đọc CSV trong `data/cicids2017`, loại flow XSS/SQLi khỏi Random Forest, chia stratified holdout 80/20, in classification report/confusion matrix và lưu model cuối vào `ml/rf_model.pkl`.
+- Model phải được train với đúng thứ tự `CIC_FEATURES`; nếu số feature của artifact không khớp, flow engine báo lỗi hướng dẫn chạy trainer.
 
-Lần huấn luyện hiện tại nạp 1.911.633 flow: BENIGN 1.656.430; HTTP Flood 241.366 (Hulk + GoldenEye); HTTP slow 11.295 (slowloris + Slowhttptest); Web Brute Force 1.756; XSS 731; SQLi 55. Model cuối có 160 cây và 67 feature. Trên stratified holdout của model gộp nhãn, recall raw-argmax là HTTP Flood 1,00; HTTP slow 1,00; Web Brute Force 0,82; XSS 0,33; SQLi 0,29. Với backstop runtime 0,15, recall XSS là 0,37 và SQLi 0,36; recall nhị phân attack 0,9998 nhưng false-positive rate BENIGN là 0,0007. Holdout ngẫu nhiên chưa chứng minh hiệu quả trên traffic độc lập.
+Artifact `rf_model.pkl` cần được tạo lại bằng pipeline trainer hiện tại trước khi sử dụng flow engine. Trainer chỉ đọc các CSV trong `data/cicids2017`; XSS/SQLi vẫn được xử lý bằng signature và model request-text riêng.
 
-Khi fit tạm bằng CIC-IDS-2017 rồi kiểm tra file 2018 riêng, recall raw-argmax Web Brute Force là 0,01; XSS và SQLi là 0; file này không có HTTP Flood/HTTP slow. Với backstop 0,15, recall attack nhị phân là 0,7182 và false-positive rate BENIGN là 0,1356. Khác biệt ngày/phiên bản/cách trích xuất có thể làm mô hình tổng quát hóa kém. Model cuối được fit trên cả hai nguồn; vẫn cần capture live của lab để đánh giá false negative và false positive.
+Trên stratified holdout, raw recall là BENIGN 1,00; HTTP Flood 1,00; HTTP slow 1,00; Web Brute Force 0,98. Với backstop runtime 0,20, recall Web Brute Force là 0,99; recall attack nhị phân là 0,9999 và false-positive rate BENIGN là 0,0009. Đây là holdout ngẫu nhiên trong cùng nguồn dữ liệu, không chứng minh hiệu quả trên traffic live độc lập.
 
-**Accuracy không đồng nghĩa không bỏ sót.** Khi bảo vệ hãy đọc recall của từng lớp, đặc biệt XSS/SQLi/Brute Force. Ngưỡng xác suất thấp thường bắt được thêm attack nhưng cũng tạo thêm false positive. Hiện chưa có bảo đảm bỏ sót bằng 0.
+**Accuracy không đồng nghĩa không bỏ sót.** Đánh giá riêng recall/false-positive của HTTP Flood, HTTP slow và Web Brute Force trên PCAP live có nhãn. XSS/SQLi không còn là lớp đầu ra của Random Forest; dùng signature và request-text Logistic Regression cho hai loại này.
 
 ### 5.6 Alert: `ids/alert/alert.py`
 
@@ -352,7 +345,7 @@ HTTP payload không nhất thiết nằm trọn trong một packet. Reassembler 
 
 **Vì sao có behavior, signature và hai model ML?** Behavior bắt nhịp/tần suất; signature bắt mẫu payload cụ thể; request ML phân loại text method/URI/body; flow ML phân loại đặc trưng CICFlowMeter. Alert lưu engine phát hiện để phân biệt nguồn.
 
-**Hai model ML nhận đầu vào gì?** Request ML nhận chuỗi `method URI body` từ từng HTTP transaction. Flow ML nhận vector 67 giá trị CICFlowMeter như port, duration, packet/byte hai chiều, rate, IAT, packet length, flags và initial TCP window; thứ tự do `CIC_FEATURES` cố định.
+**Hai model ML nhận đầu vào gì?** Request ML nhận chuỗi `method URI body` từ từng HTTP transaction. Flow ML nhận vector 61 feature theo thứ tự `CIC_FEATURES`.
 
 **Làm sao biết model bỏ sót?** Xem confusion matrix và recall từng lớp trên holdout, sau đó kiểm tra với PCAP độc lập. Không chỉ nhìn accuracy, vì lớp BENIGN có thể áp đảo dữ liệu.
 
@@ -368,7 +361,7 @@ HTTP payload không nhất thiết nằm trọn trong một packet. Reassembler 
 
 ## 10. Giới hạn cần nói trung thực
 
-- Runtime/trainer khớp 67 feature, chưa phải toàn bộ 78 feature CICFlowMeter.
+- Vector flow runtime và trainer dùng 61 feature, chưa phải toàn bộ 78 feature CICFlowMeter. Artifact cần được huấn luyện theo schema hiện hành trước khi sử dụng.
 - Flow direction phụ thuộc packet đầu tiên được capture; bắt giữa flow có thể đảo góc nhìn forward/backward.
 - Signature HTTP không đọc nội dung TLS mã hóa; regex không bao phủ mọi encoding/obfuscation.
 - Request ML cũng cần request HTTP đọc được; dataset tổng hợp không đại diện đầy đủ traffic thật và holdout ngẫu nhiên có thể bị rò rỉ họ mẫu.

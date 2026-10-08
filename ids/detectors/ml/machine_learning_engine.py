@@ -17,6 +17,12 @@ model.set_params(n_jobs=1)
 
 def ml_engine(session):
     """Classify one CIC-compatible flow and alert on a non-BENIGN prediction."""
+    if getattr(model, "n_features_in_", len(CIC_FEATURES)) != len(CIC_FEATURES):
+        raise ValueError(
+            "Random Forest model không khớp schema 61 feature. "
+            "Hãy huấn luyện lại bằng `python -m ml.rf_training`."
+        )
+
     # CICFlowMeter's CSV exporter omits flows with one or fewer packets.
     # Keep those tiny sessions available to behavior/signature engines, but do
     # not feed feature vectors to a model trained on CICFlowMeter CSV rows.
@@ -30,8 +36,6 @@ def ml_engine(session):
         np.asarray([[float(value or 0) for value in features]], dtype=np.float64),
         nan=0.0, posinf=0.0, neginf=0.0,
     )
-    # Pass column names as well as values so scikit-learn can verify the
-    # expanded training schema and order at inference time.
     X = pd.DataFrame(values, columns=CIC_FEATURES)
     prediction = model.predict(X)
     result = str(prediction[0])
@@ -41,7 +45,7 @@ def ml_engine(session):
         probabilities = model.predict_proba(X)[0]
         classes = [str(label) for label in model.classes_]
         attack_scores = [(label, float(prob)) for label, prob in zip(classes, probabilities)
-                         if label.upper() != "BENIGN"]
+                        if label.upper() != "BENIGN"]
         if attack_scores:
             attack_label, attack_probability = max(attack_scores, key=lambda item: item[1])
             predicted_probability = dict(zip(classes, probabilities)).get(result, 1.0)

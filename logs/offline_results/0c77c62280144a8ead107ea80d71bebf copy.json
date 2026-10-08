@@ -1,0 +1,9 @@
+{
+  "result_id": "0c77c62280144a8ead107ea80d71bebf",
+  "filename": "PCAP_slowhttptest.pcapng",
+  "processed_at": "2026-10-07T17:53:41.512138+00:00",
+  "packets": 2575,
+  "sessions": 170,
+  "alert_count": 0,
+  "alerts": []
+}

@@ -59,12 +59,12 @@ def request_text_engine(session, rules=None):
     src_ip = network.get("src_ip", "")
     rules = rules or {}
     try:
-        threshold = float(rules.get("REQUEST_TEXT_ALERT_THRESHOLD", 0.6))
+        threshold = float(rules.get("REQUEST_TEXT_ALERT_THRESHOLD", 0.8))
     except (TypeError, ValueError):
-        threshold = 0.6
+        threshold = 0.8
     if not 0.0 <= threshold <= 1.0:
-        logger.warning("Invalid request-text threshold %r; using 0.6", threshold)
-        threshold = 0.6
+        logger.warning("Invalid request-text threshold %r; using 0.8", threshold)
+        threshold = 0.8
 
     predictions = []
     for transaction in http.get("transactions", []):

@@ -1,0 +1,1 @@
+{"alert_id": "A178", "timestamp": "2026-10-07T17:06:48.008498+00:00", "src_ip": "10.0.0.2", "attack_type": "HTTP slow", "engine": "machine learning", "severity": "high", "evidence": "HTTP slow (model confidence=0.253)"}

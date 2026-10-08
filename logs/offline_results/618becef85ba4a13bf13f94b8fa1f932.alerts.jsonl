@@ -1,0 +1,2 @@
+{"alert_id": "A221", "timestamp": "2026-10-07T19:20:53.996975+00:00", "src_ip": "127.0.0.1", "attack_type": "HTTP Flood", "engine": "machine learning", "severity": "high", "evidence": "HTTP Flood (model confidence=0.346)"}
+{"alert_id": "A222", "timestamp": "2026-10-07T19:35:11.582361+00:00", "src_ip": "127.0.0.1", "attack_type": "HTTP slow", "engine": "machine learning", "severity": "high", "evidence": "HTTP slow (model confidence=0.300)"}

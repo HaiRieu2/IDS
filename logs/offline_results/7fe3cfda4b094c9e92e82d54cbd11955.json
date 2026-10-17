@@ -1,0 +1,55 @@
+{
+  "result_id": "7fe3cfda4b094c9e92e82d54cbd11955",
+  "filename": "SQLi_XSS.pcap",
+  "processed_at": "2026-10-08T18:13:00.446641+00:00",
+  "packets": 314,
+  "sessions": 49,
+  "alert_count": 5,
+  "alerts": [
+    {
+      "alert_id": "A278",
+      "timestamp": "2026-10-08T18:12:58.294165+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "SQLi",
+      "engine": "signature",
+      "severity": "critical",
+      "evidence": "/login username=admin'--&password=213"
+    },
+    {
+      "alert_id": "A279",
+      "timestamp": "2026-10-08T18:12:58.302096+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "SQLi",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "request_text: POST /login username=admin%27--&password=213 (model confidence=0.984)"
+    },
+    {
+      "alert_id": "A280",
+      "timestamp": "2026-10-08T18:12:59.093679+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "XSS",
+      "engine": "signature",
+      "severity": "critical",
+      "evidence": "/truyen/3 username=admin&content=<script>alert()</script>"
+    },
+    {
+      "alert_id": "A281",
+      "timestamp": "2026-10-08T18:12:59.105229+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "XSS",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "request_text: POST /truyen/3 username=admin&content=%3Cscript%3Ealert%28%29%3C%2Fscript%3E (model confidence=0.998)"
+    },
+    {
+      "alert_id": "A282",
+      "timestamp": "2026-10-08T18:12:59.649645+00:00",
+      "src_ip": "127.0.0.1",
+      "attack_type": "HTTP Flood",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "HTTP Flood (model confidence=0.430)"
+    }
+  ]
+}

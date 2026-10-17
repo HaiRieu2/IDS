@@ -6,7 +6,7 @@ BENIGN    7000
 SQLi      5000
 XSS       5000
 
-Đang train model đánh giá...
+Đang train model trên 80% dữ liệu...
 
 Kết quả trên 20% dữ liệu holdout:
               precision    recall  f1-score   support
@@ -23,8 +23,6 @@ Confusion matrix (thứ tự nhãn: BENIGN, SQLi, XSS):
 [[1400    0    0]
  [   0 1000    0]
  [   0    0 1000]]
-
-Đang train model cuối trên toàn bộ dữ liệu...
 Đã lưu model: F:\IDS\ml\request_text_model.joblib
 Các lớp model nhận diện: ['BENIGN', 'SQLi', 'XSS']
 Log đã lưu: F:\IDS\reports\request_text_training.log

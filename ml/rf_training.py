@@ -68,8 +68,8 @@ def main():
     model = RandomForestClassifier(
         n_estimators=160,
         criterion="gini",
-        class_weight="balanced",
-        min_samples_split=4,
+        class_weight=None,
+        min_samples_split=5,
         min_samples_leaf=2,
         max_samples=0.8,
         bootstrap=True,

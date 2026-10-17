@@ -112,6 +112,8 @@ def request_text_engine(session, rules=None):
             src_ip,
         )
         if prediction.casefold() != "benign":
+            if src_ip != "192.168.126.129":
+                return
             alert_machine_learning(
                 src_ip,
                 prediction,

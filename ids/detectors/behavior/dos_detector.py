@@ -125,7 +125,6 @@ def detect_HTTP_Flood(
             continue
         if src_ip != "192.168.126.129":
             continue
-
         duration = timestamp.get("duration", 0)
         request_count=connection.get("request_count",0)
                     

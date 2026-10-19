@@ -48,7 +48,7 @@ def main():
 
 
     print("Đã làm sạch dữ liệu thành công.")
-
+    print(data['Label'].value_counts())
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -66,9 +66,9 @@ def main():
     print("y_test :", y_test.shape)
 
     model = RandomForestClassifier(
-        n_estimators=160,
+        n_estimators=200,
         criterion="gini",
-        class_weight=None,
+        class_weight="balanced",
         min_samples_split=5,
         min_samples_leaf=2,
         max_samples=0.8,

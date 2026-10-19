@@ -1,0 +1,19 @@
+{
+  "result_id": "00c8daf7d31e499fb3a31f1d1bd77591",
+  "filename": "http_slowloris.pcap",
+  "processed_at": "2026-10-18T02:02:42.330724+00:00",
+  "packets": 8000,
+  "sessions": 2000,
+  "alert_count": 1,
+  "alerts": [
+    {
+      "alert_id": "A011",
+      "timestamp": "2026-10-18T02:02:05.121739+00:00",
+      "src_ip": "154.49.2.126",
+      "attack_type": "HTTP slow",
+      "engine": "machine learning",
+      "severity": "high",
+      "evidence": "HTTP slow (model confidence=0.867)"
+    }
+  ]
+}

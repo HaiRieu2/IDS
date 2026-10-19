@@ -64,8 +64,7 @@ def ml_engine(session):
     if result.upper() != "BENIGN":
         network = session.get("network",{})
         src_ip = network.get("src_ip", "")
-        if src_ip != "192.168.126.129":
-            return
+        
         alert_machine_learning(src_ip, result, confidence=confidence)
     return
 

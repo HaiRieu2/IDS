@@ -123,8 +123,7 @@ def detect_HTTP_Flood(
         is_http_conn = bool(http.get("is_http")) or dst_port == HTTP_SLOW_PORT
         if is_http_conn == False:
             continue
-        if src_ip != "192.168.126.129":
-            continue
+
         duration = timestamp.get("duration", 0)
         request_count=connection.get("request_count",0)
                     
